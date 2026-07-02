@@ -1,10 +1,10 @@
-import axios from "axios";
 import cors from "cors";
 import express from "express";
 import multer from "multer";
 import { z } from "zod";
 import { isAllowedResumeFile, parseResumeFile } from "./lib/parseResume";
-import type { GithubRepoSummary, PreInterviewResponse } from "./types";
+import { fetchGithubRepos, toGithubRepoSummary } from "./lib/github";
+import type { PreInterviewResponse } from "./types";
 
 const app = express();
 const upload = multer({
@@ -39,30 +39,12 @@ app.post("/api/v1/pre-interview", upload.single("resume"), async (req, res) => {
       return res.status(400).json({ error: "Could not parse GitHub username from URL." });
     }
 
-    const [resume, githubReposResponse] = await Promise.all([
+    const [resume, githubRepos] = await Promise.all([
       parseResumeFile(file.buffer, file.mimetype, file.originalname),
-      axios.get(`https://api.github.com/users/${username}/repos`, {
-        headers: process.env.GITHUB_TOKEN
-          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-          : undefined,
-      }),
+      fetchGithubRepos(username),
     ]);
 
-    const repos: GithubRepoSummary[] = githubReposResponse.data.map((repo: {
-      description: string | null;
-      name: string;
-      full_name: string;
-      stargazers_count: number;
-      language: string | null;
-      html_url: string;
-    }) => ({
-      description: repo.description,
-      name: repo.name,
-      fullName: repo.full_name,
-      starCount: repo.stargazers_count,
-      language: repo.language,
-      url: repo.html_url,
-    }));
+    const repos = toGithubRepoSummary(githubRepos);
 
     const response: PreInterviewResponse = {
       resume,
