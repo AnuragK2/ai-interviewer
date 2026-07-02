@@ -1,38 +1,23 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { APITester } from "./APITester";
-import "./index.css";
-
-import logo from "./logo.svg";
-import reactLogo from "./react.svg";
+import "../styles/globals.css";
+import { Form } from "./components/Form";
+import { Interview } from "./components/Interview";
+import { Result } from "./components/Result";
+import { useState } from "react";
+import { Toaster } from "sonner";
 
 export function App() {
+  const [page, setPage] = useState<"form" | "loading" | "results" | "error" | "success" | "interview">("form");
+
   return (
-    <div className="container mx-auto p-8 text-center relative z-10">
-      <div className="flex justify-center items-center gap-8 mb-8">
-        <img
-          src={logo}
-          alt="Bun Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#646cffaa] scale-120"
-        />
-        <img
-          src={reactLogo}
-          alt="React Logo"
-          className="h-36 p-6 transition-all duration-300 hover:drop-shadow-[0_0_2em_#61dafbaa] [animation:spin_20s_linear_infinite]"
-        />
-      </div>
-      <Card>
-        <CardHeader className="gap-4">
-          <CardTitle className="text-3xl font-bold">Bun + React</CardTitle>
-          <CardDescription>
-            Edit <code className="rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono">src/App.tsx</code> and save to
-            test HMR
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <APITester />
-        </CardContent>
-      </Card>
-    </div>
+    <> 
+    {page === "form" && <Form />}
+    {page === "results" && <Result />}
+    {page === "interview" && <Interview />}
+    {/* {page === "loading" && <div>Loading...</div>}
+    {page === "error" && <div>Error</div>}
+    {page === "success" && <div>Success</div>} */}
+    <Toaster />
+    </>
   );
 }
 
