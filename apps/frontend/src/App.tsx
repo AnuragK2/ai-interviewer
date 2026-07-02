@@ -14,14 +14,14 @@ export function App() {
     <div className="dark min-h-screen bg-background text-foreground">
       {page === "form" && (
         <Form
-          onSuccess={(data) => {
+          onBeginInterview={(data) => {
             setProfile(data);
             setPage("interview");
           }}
         />
       )}
       {page === "results" && <Result />}
-      {page === "interview" && <Interview profile={profile} />}
+      {page === "interview" && <Interview profile={profile} onExit={() => setPage("form")} />}
       <Toaster theme="dark" richColors />
     </div>
   );

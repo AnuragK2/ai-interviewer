@@ -2,24 +2,36 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "./ui/modal";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { BACKEND_URL } from "@/lib/config";
+import { INTERVIEW_DISCLAIMERS } from "@/lib/disclaimer";
 import axios from "axios";
 import type { PreInterviewResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Code2, FileText, Loader2, Sparkles, Upload, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Code2, FileText, Loader2, ShieldAlert, Sparkles, Upload, X } from "lucide-react";
 import { PageShell } from "./PageShell";
 
 type FormProps = {
-  onSuccess?: (profile: PreInterviewResponse) => void;
+  onBeginInterview?: (profile: PreInterviewResponse) => void;
 };
 
-export function Form({ onSuccess }: FormProps) {
+export function Form({ onBeginInterview }: FormProps) {
   const [githubUrl, setGithubUrl] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [parsedProfile, setParsedProfile] = useState<PreInterviewResponse | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileSelect(file: File | undefined) {
@@ -50,7 +62,8 @@ export function Form({ onSuccess }: FormProps) {
       });
 
       toast.success("Resume parsed successfully");
-      onSuccess?.(data);
+      setParsedProfile(data);
+      setShowDisclaimer(true);
     } catch (error) {
       const message =
         axios.isAxiosError(error) && error.response?.data?.error
@@ -62,8 +75,57 @@ export function Form({ onSuccess }: FormProps) {
     }
   }
 
+  const candidateName = parsedProfile?.resume.name ?? parsedProfile?.github.username;
+
   return (
     <PageShell>
+      <Modal open={showDisclaimer} onOpenChange={(isOpen: boolean) => !isOpen && setShowDisclaimer(false)}>
+        <ModalContent aria-describedby="disclaimer-description">
+          <ModalHeader>
+            <ModalTitle>Before you begin</ModalTitle>
+            <ModalDescription id="disclaimer-description">
+              {candidateName ? `Interview guidelines for ${candidateName}` : "Interview guidelines"}
+            </ModalDescription>
+          </ModalHeader>
+
+          <ModalBody className="space-y-3 rounded-xl border border-border/50 bg-secondary/20 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ShieldAlert className="h-4 w-4 text-amber-300" />
+              Please read carefully
+            </div>
+            <ul className="space-y-2.5 text-sm leading-relaxed text-muted-foreground">
+              {INTERVIEW_DISCLAIMERS.map((point) => (
+                <li key={point} className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-teal-400" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowDisclaimer(false)}
+              className="border-border/60 bg-secondary/20"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <Button
+              onClick={() => {
+                if (!parsedProfile) return;
+                setShowDisclaimer(false);
+                onBeginInterview?.(parsedProfile);
+              }}
+              className="bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400"
+            >
+              Let&apos;s get started
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       <div className="flex min-h-screen items-center justify-center p-6">
         <div className="w-full max-w-lg space-y-8">
           <div className="space-y-3 text-center">
