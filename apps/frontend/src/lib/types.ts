@@ -1,6 +1,14 @@
-import type { ParsedResume } from "./lib/extractResumeFields";
-
-export type { ParsedResume };
+export type ParsedResume = {
+  rawText: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  summary?: string;
+  skills: string[];
+  experience: string[];
+  education: string[];
+  projects: string[];
+};
 
 export type GithubRepoSummary = {
   description: string | null;
