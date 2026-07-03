@@ -11,11 +11,21 @@ export type GithubRepoSummary = {
   url: string;
 };
 
+export type GithubProfileData = {
+  username: string;
+  profileUrl: string;
+  repos: GithubRepoSummary[];
+};
+
+export type InterviewSummary = {
+  id: string;
+  status: string;
+  score: number;
+  createdAt: string;
+};
+
 export type PreInterviewResponse = {
+  interview: InterviewSummary;
   resume: ParsedResume;
-  github: {
-    username: string;
-    profileUrl: string;
-    repos: GithubRepoSummary[];
-  };
+  github: GithubProfileData;
 };

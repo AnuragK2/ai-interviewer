@@ -1,8 +1,17 @@
+import { Navigate, useNavigate, useParams } from "react-router";
 import { PageShell } from "./PageShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
 import { Trophy } from "lucide-react";
 
 export function Result() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  if (!id) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <PageShell>
       <div className="flex min-h-screen items-center justify-center p-6">
@@ -18,8 +27,14 @@ export function Result() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="space-y-4 pt-6">
+            <p className="text-xs text-muted-foreground">
+              Interview ID: <span className="font-mono text-foreground/80">{id}</span>
+            </p>
             <p className="text-sm text-muted-foreground">Complete an interview session to see your results.</p>
+            <Button variant="outline" onClick={() => navigate("/")} className="border-border/60 bg-secondary/20">
+              Back to home
+            </Button>
           </CardContent>
         </Card>
       </div>

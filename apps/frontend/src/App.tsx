@@ -1,29 +1,23 @@
 import "../styles/globals.css";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import { Toaster } from "sonner";
 import { Form } from "./components/Form";
 import { Interview } from "./components/Interview";
 import { Result } from "./components/Result";
-import { useState } from "react";
-import { Toaster } from "sonner";
-import type { PreInterviewResponse } from "@/lib/types";
 
 export function App() {
-  const [page, setPage] = useState<"form" | "loading" | "results" | "error" | "success" | "interview">("form");
-  const [profile, setProfile] = useState<PreInterviewResponse | null>(null);
-
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
-      {page === "form" && (
-        <Form
-          onBeginInterview={(data) => {
-            setProfile(data);
-            setPage("interview");
-          }}
-        />
-      )}
-      {page === "results" && <Result />}
-      {page === "interview" && <Interview profile={profile} onExit={() => setPage("form")} />}
-      <Toaster theme="dark" richColors />
-    </div>
+    <BrowserRouter>
+      <div className="dark min-h-screen bg-background text-foreground">
+        <Routes>
+          <Route path="/" element={<Form />} />
+          <Route path="/interview/:id" element={<Interview />} />
+          <Route path="/results/:id" element={<Result />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <Toaster theme="dark" richColors />
+      </div>
+    </BrowserRouter>
   );
 }
 

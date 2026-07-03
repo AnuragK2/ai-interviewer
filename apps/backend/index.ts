@@ -5,6 +5,7 @@ import { z } from "zod";
 import { isAllowedResumeFile, parseResumeFile } from "./lib/parseResume";
 import { fetchGithubRepos, toGithubRepoSummary } from "./lib/github";
 import type { PreInterviewResponse } from "./types";
+import { prisma } from "./db";
 
 const app = express();
 const upload = multer({
@@ -44,15 +45,29 @@ app.post("/api/v1/pre-interview", upload.single("resume"), async (req, res) => {
       fetchGithubRepos(username),
     ]);
 
-    const repos = toGithubRepoSummary(githubRepos);
+    const github = {
+      username,
+      profileUrl,
+      repos: toGithubRepoSummary(githubRepos),
+    };
+
+    const interview = await prisma.interview.create({
+      data: {
+        githubMetaData: github,
+        resume,
+        status: "PENDING",
+      },
+    });
 
     const response: PreInterviewResponse = {
-      resume,
-      github: {
-        username,
-        profileUrl,
-        repos,
+      interview: {
+        id: interview.id,
+        status: interview.status,
+        score: interview.score,
+        createdAt: interview.createdAt.toISOString(),
       },
+      resume,
+      github,
     };
 
     return res.json(response);

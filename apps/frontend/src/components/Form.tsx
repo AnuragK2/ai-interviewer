@@ -12,20 +12,19 @@ import {
   ModalTitle,
 } from "./ui/modal";
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { BACKEND_URL } from "@/lib/config";
 import { INTERVIEW_DISCLAIMERS } from "@/lib/disclaimer";
+import { saveInterviewSession } from "../lib/interviewSession";
 import axios from "axios";
 import type { PreInterviewResponse } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, ArrowRight, Code2, FileText, Loader2, ShieldAlert, Sparkles, Upload, X } from "lucide-react";
 import { PageShell } from "./PageShell";
 
-type FormProps = {
-  onBeginInterview?: (profile: PreInterviewResponse) => void;
-};
-
-export function Form({ onBeginInterview }: FormProps) {
+export function Form() {
+  const navigate = useNavigate();
   const [githubUrl, setGithubUrl] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,7 +60,7 @@ export function Form({ onBeginInterview }: FormProps) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success("Resume parsed successfully");
+      toast.success("Interview created successfully");
       setParsedProfile(data);
       setShowDisclaimer(true);
     } catch (error) {
@@ -116,7 +115,8 @@ export function Form({ onBeginInterview }: FormProps) {
               onClick={() => {
                 if (!parsedProfile) return;
                 setShowDisclaimer(false);
-                onBeginInterview?.(parsedProfile);
+                saveInterviewSession(parsedProfile);
+                navigate(`/interview/${parsedProfile.interview.id}`);
               }}
               className="bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400"
             >

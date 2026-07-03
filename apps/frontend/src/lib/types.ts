@@ -19,7 +19,15 @@ export type GithubRepoSummary = {
   url: string;
 };
 
+export type InterviewSummary = {
+  id: string;
+  status: string;
+  score: number;
+  createdAt: string;
+};
+
 export type PreInterviewResponse = {
+  interview: InterviewSummary;
   resume: ParsedResume;
   github: {
     username: string;
