@@ -6,6 +6,13 @@ import {
   INTERVIEW_LIMITS,
 } from "./interviewLimits";
 import { moderateUserText, scoreInterview } from "./moderation";
+import {
+  buildProctoringToastMessage,
+  PROCTORING_SIGNALS,
+  PROCTORING_TERMINATION_MESSAGE,
+  PROCTORING_VIOLATION_LIMIT,
+  type ProctoringSignal,
+} from "./proctoringMessages";
 import { OpenAIRealtimeSocket } from "./openaiRealtimeSocket";
 
 type ClientMessage =
@@ -14,7 +21,14 @@ type ClientMessage =
   | { type: "cheat_signal"; signal: CheatSignal }
   | { type: "end_interview" };
 
-type CheatSignal = "tab_hidden" | "window_blur" | "copy" | "paste";
+type CheatSignal =
+  | "tab_hidden"
+  | "window_blur"
+  | "copy"
+  | "paste"
+  | "face_not_visible"
+  | "looking_away"
+  | "camera_disabled";
 
 type EndReason = "cheat" | "completed" | "error" | "client_end";
 
@@ -23,19 +37,8 @@ type InterviewPhase = "active" | "winding_down" | "closing";
 type ResumeData = { name?: string };
 type GithubData = { username?: string };
 
-const CHEAT_LIMITS: Record<CheatSignal, number> = {
-  tab_hidden: 1,
-  window_blur: 3,
-  copy: 1,
-  paste: 1,
-};
-
-const CHEAT_MESSAGES: Record<CheatSignal, string> = {
-  tab_hidden: "Interview ended because the tab was hidden.",
-  window_blur: "Interview ended due to repeated window focus loss.",
-  copy: "Interview ended because copy activity was detected.",
-  paste: "Interview ended because paste activity was detected.",
-};
+/** Extra wait after the candidate stops speaking before the agent responds. */
+const USER_TURN_END_DELAY_MS = 2_000;
 
 export class InterviewRuntime {
   private openai: OpenAIRealtimeSocket | null = null;
@@ -51,11 +54,18 @@ export class InterviewRuntime {
   private closingRequested = false;
   private awaitingClosingResponse = false;
   private progressTimer: ReturnType<typeof setInterval> | null = null;
+  private responseDelayTimer: ReturnType<typeof setTimeout> | null = null;
+  private initialGreetingSent = false;
+  private totalViolationCount = 0;
+  private awaitingProctoringTermination = false;
   private cheatCounts: Record<CheatSignal, number> = {
     tab_hidden: 0,
     window_blur: 0,
     copy: 0,
     paste: 0,
+    face_not_visible: 0,
+    looking_away: 0,
+    camera_disabled: 0,
   };
 
   constructor(private readonly client: WebSocket) {}
@@ -159,11 +169,36 @@ export class InterviewRuntime {
 
   private async handleCheatSignal(signal: CheatSignal) {
     if (this.ended) return;
-    if (!(signal in CHEAT_LIMITS)) return;
+    if (!PROCTORING_SIGNALS.has(signal as ProctoringSignal)) return;
 
     this.cheatCounts[signal] += 1;
-    if (this.cheatCounts[signal] >= CHEAT_LIMITS[signal]) {
-      await this.endInterview("cheat", CHEAT_MESSAGES[signal]);
+    this.totalViolationCount += 1;
+    this.clearResponseDelayTimer();
+
+    const proctoringSignal = signal as ProctoringSignal;
+    const isFinal = this.totalViolationCount >= PROCTORING_VIOLATION_LIMIT;
+
+    this.sendClient({
+      type: "proctoring.warning",
+      message: buildProctoringToastMessage(
+        proctoringSignal,
+        this.totalViolationCount,
+        PROCTORING_VIOLATION_LIMIT,
+      ),
+      strikes: this.totalViolationCount,
+      limit: PROCTORING_VIOLATION_LIMIT,
+    });
+
+    this.openai?.cancelResponse();
+    this.openai?.requestProctoringWarning(
+      proctoringSignal,
+      this.totalViolationCount,
+      PROCTORING_VIOLATION_LIMIT,
+      isFinal,
+    );
+
+    if (isFinal) {
+      this.awaitingProctoringTermination = true;
     }
   }
 
@@ -206,13 +241,27 @@ export class InterviewRuntime {
           return;
         }
 
+        if (this.awaitingProctoringTermination) {
+          await this.endInterview("cheat", PROCTORING_TERMINATION_MESSAGE);
+          return;
+        }
+
         this.evaluateInterviewProgress();
         break;
       case "input_audio_buffer.speech_started":
+        this.clearResponseDelayTimer();
         this.sendClient({ type: "user_speaking", speaking: true });
         break;
       case "input_audio_buffer.speech_stopped":
         this.sendClient({ type: "user_speaking", speaking: false });
+        this.scheduleAgentResponse();
+        break;
+      case "session.created":
+      case "session.updated":
+        if (!this.initialGreetingSent && this.openai) {
+          this.initialGreetingSent = true;
+          this.openai.startConversation();
+        }
         break;
       case "response.output_audio_transcript.delta":
       case "response.audio_transcript.delta":
@@ -249,6 +298,24 @@ export class InterviewRuntime {
         break;
       default:
         break;
+    }
+  }
+
+  private scheduleAgentResponse() {
+    if (this.ended || this.awaitingClosingResponse || !this.openai) return;
+
+    this.clearResponseDelayTimer();
+    this.responseDelayTimer = setTimeout(() => {
+      this.responseDelayTimer = null;
+      if (this.ended || this.awaitingClosingResponse || !this.openai) return;
+      this.openai.commitInputAndRespond();
+    }, USER_TURN_END_DELAY_MS);
+  }
+
+  private clearResponseDelayTimer() {
+    if (this.responseDelayTimer) {
+      clearTimeout(this.responseDelayTimer);
+      this.responseDelayTimer = null;
     }
   }
 
@@ -313,6 +380,7 @@ export class InterviewRuntime {
 
     this.closingRequested = true;
     this.interviewPhase = "closing";
+    this.clearResponseDelayTimer();
     this.openai.appendInstructions(getClosingInstructions());
     this.openai.cancelResponse();
     this.openai.requestClosingRemark(this.candidateName);
@@ -336,6 +404,7 @@ export class InterviewRuntime {
     this.ended = true;
 
     this.clearProgressTimer();
+    this.clearResponseDelayTimer();
     this.openai?.close();
     this.openai = null;
 

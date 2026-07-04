@@ -1,15 +1,18 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { PageShell } from "./PageShell";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
+import type { ProctoringState } from "../lib/proctoring/useProctoring";
 import {
   Bot,
   Camera,
   CameraOff,
+  Eye,
   Loader2,
   Mic,
   MicOff,
   PhoneOff,
+  ShieldAlert,
   Sparkles,
   User,
 } from "lucide-react";
@@ -26,6 +29,8 @@ type InterviewRoomProps = {
   candidateName: string;
   interviewId: string;
   mediaStream: MediaStream;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  proctoring: ProctoringState;
   connectionStatus: ConnectionStatus;
   connectionError: string | null;
   transcript: TranscriptMessage[];
@@ -42,6 +47,8 @@ export function InterviewRoom({
   candidateName,
   interviewId,
   mediaStream,
+  videoRef,
+  proctoring,
   connectionStatus,
   connectionError,
   transcript,
@@ -53,17 +60,16 @@ export function InterviewRoom({
   onToggleCamera,
   onEndInterview,
 }: InterviewRoomProps) {
-  const localVideoRef = useRef<HTMLVideoElement>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const video = localVideoRef.current;
+    const video = videoRef.current;
     if (!video) return;
     video.srcObject = mediaStream;
     void video.play().catch(() => {
       // Autoplay can fail briefly during track toggles.
     });
-  }, [mediaStream, isCameraEnabled]);
+  }, [mediaStream, isCameraEnabled, videoRef]);
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +90,10 @@ export function InterviewRoom({
               </p>
             </div>
           </div>
-          <ConnectionBadge status={connectionStatus} />
+          <div className="flex shrink-0 items-center gap-2">
+            <ProctoringBadge proctoring={proctoring} />
+            <ConnectionBadge status={connectionStatus} />
+          </div>
         </header>
 
         <div className="flex flex-1 items-center justify-center p-4 pb-28 sm:p-6 sm:pb-32">
@@ -122,7 +131,7 @@ export function InterviewRoom({
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-black/50">
                   <video
-                    ref={localVideoRef}
+                    ref={videoRef}
                     autoPlay
                     playsInline
                     muted
@@ -131,6 +140,12 @@ export function InterviewRoom({
                       !isCameraEnabled && "invisible",
                     )}
                   />
+                  {proctoring.status === "warning" && isCameraEnabled && (
+                    <div className="absolute inset-x-3 top-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-950/80 px-3 py-2 text-xs text-amber-100 backdrop-blur-sm">
+                      <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>{proctoring.message ?? "Stay focused on the camera."}</span>
+                    </div>
+                  )}
                   {!isCameraEnabled && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-secondary/40">
                       <div className="flex h-20 w-20 items-center justify-center rounded-full border border-border/50 bg-secondary/60">
@@ -294,6 +309,44 @@ function ControlButton({
     >
       {children}
     </Button>
+  );
+}
+
+function ProctoringBadge({ proctoring }: { proctoring: ProctoringState }) {
+  if (proctoring.status === "inactive") return null;
+
+  if (proctoring.status === "initializing") {
+    return (
+      <span className="hidden items-center gap-2 rounded-full border border-border/50 bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground sm:inline-flex">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        Proctoring
+      </span>
+    );
+  }
+
+  if (proctoring.status === "unavailable") {
+    return (
+      <span className="hidden items-center gap-2 rounded-full border border-border/50 bg-secondary/40 px-3 py-1.5 text-xs text-muted-foreground sm:inline-flex">
+        <Eye className="h-3.5 w-3.5" />
+        Partial
+      </span>
+    );
+  }
+
+  if (proctoring.status === "warning") {
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-200">
+        <ShieldAlert className="h-3.5 w-3.5" />
+        Proctoring alert
+      </span>
+    );
+  }
+
+  return (
+    <span className="hidden items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1.5 text-xs text-teal-300 sm:inline-flex">
+      <Eye className="h-3.5 w-3.5" />
+      Proctored
+    </span>
   );
 }
 

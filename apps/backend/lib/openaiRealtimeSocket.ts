@@ -1,4 +1,8 @@
 import { buildInterviewInstructions } from "./interviewInstructions";
+import {
+  buildProctoringAgentPrompt,
+  type ProctoringSignal,
+} from "./proctoringMessages";
 
 const OPENAI_REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime-2";
 const OPENAI_REALTIME_VOICE = process.env.OPENAI_REALTIME_VOICE ?? "marin";
@@ -82,7 +86,12 @@ export class OpenAIRealtimeSocket {
               language: "en",
               prompt: "Technical job interview. Transcribe spoken English only.",
             },
-            turn_detection: { type: "server_vad" },
+            turn_detection: {
+              type: "semantic_vad",
+              eagerness: "low",
+              create_response: false,
+              interrupt_response: true,
+            },
           },
           output: {
             format: { type: "audio/pcm", rate: 24000 },
@@ -105,12 +114,36 @@ export class OpenAIRealtimeSocket {
     });
   }
 
+  startConversation() {
+    this.send({ type: "response.create" });
+  }
+
+  commitInputAndRespond() {
+    this.send({ type: "input_audio_buffer.commit" });
+    this.send({ type: "response.create" });
+  }
+
   appendInstructions(addition: string) {
     this.send({
       type: "session.update",
       session: {
         type: "realtime",
         instructions: `${this.baseInstructions}\n\n${addition}`,
+      },
+    });
+  }
+
+  requestProctoringWarning(
+    signal: ProctoringSignal,
+    strike: number,
+    limit: number,
+    isFinal: boolean,
+  ) {
+    this.send({
+      type: "response.create",
+      response: {
+        output_modalities: ["audio"],
+        instructions: buildProctoringAgentPrompt(signal, strike, limit, isFinal),
       },
     });
   }

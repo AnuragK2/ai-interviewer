@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { clearInterviewSession, loadInterviewSession } from "../lib/interviewSession";
 import { stopMediaStream } from "../lib/mediaStream";
+import { useProctoring } from "../lib/proctoring/useProctoring";
 import {
   connectRealtimeInterview,
   type BackendInterviewEvent,
@@ -34,8 +35,21 @@ export function Interview() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const realtimeRef = useRef<RealtimeConnection | null>(null);
   const agentMessageIdRef = useRef<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const profile = useMemo(() => (id ? loadInterviewSession(id) : null), [id]);
+
+  const proctoring = useProctoring({
+    videoRef,
+    enabled: checksPassed && !!mediaStream,
+    cameraEnabled: isCameraEnabled,
+    onViolation: (signal) => {
+      realtimeRef.current?.sendCheatSignal(signal);
+    },
+    onSoftWarning: (message) => {
+      toast.warning(message);
+    },
+  });
 
   useEffect(() => {
     mediaStreamRef.current = mediaStream;
@@ -141,6 +155,9 @@ export function Interview() {
           setConnectionStatus("failed");
           setConnectionError(event.message);
           break;
+        case "proctoring.warning":
+          toast.warning(event.message);
+          break;
         case "interview.ended":
           toast.message(event.message, {
             description:
@@ -180,10 +197,18 @@ export function Interview() {
       realtimeRef.current?.sendCheatSignal(signal);
     };
 
-    const onVisibility = () => {
-      if (document.hidden) sendCheat("tab_hidden");
+    let lastFocusSignalAt = 0;
+    const sendFocusCheat = (signal: "tab_hidden" | "window_blur") => {
+      const now = Date.now();
+      if (now - lastFocusSignalAt < 2_000) return;
+      lastFocusSignalAt = now;
+      sendCheat(signal);
     };
-    const onBlur = () => sendCheat("window_blur");
+
+    const onVisibility = () => {
+      if (document.hidden) sendFocusCheat("tab_hidden");
+    };
+    const onBlur = () => sendFocusCheat("window_blur");
     const onCopy = () => sendCheat("copy");
     const onPaste = () => sendCheat("paste");
 
@@ -262,6 +287,8 @@ export function Interview() {
       candidateName={candidateName}
       interviewId={profile.interview.id}
       mediaStream={mediaStream}
+      videoRef={videoRef}
+      proctoring={proctoring}
       connectionStatus={connectionStatus}
       connectionError={connectionError}
       transcript={transcript}

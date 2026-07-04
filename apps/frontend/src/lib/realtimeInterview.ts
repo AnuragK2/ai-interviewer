@@ -1,7 +1,14 @@
 import { BACKEND_URL } from "./config";
 import { createAudioPlayer, createMicStreamer } from "./audioBridge";
 
-export type CheatSignal = "tab_hidden" | "window_blur" | "copy" | "paste";
+export type CheatSignal =
+  | "tab_hidden"
+  | "window_blur"
+  | "copy"
+  | "paste"
+  | "face_not_visible"
+  | "looking_away"
+  | "camera_disabled";
 
 export type BackendInterviewEvent =
   | { type: "session.ready" }
@@ -9,6 +16,7 @@ export type BackendInterviewEvent =
   | { type: "agent_speaking"; speaking: boolean }
   | { type: "user_speaking"; speaking: boolean }
   | { type: "output_audio"; audio: string }
+  | { type: "proctoring.warning"; message: string; strikes: number; limit: number }
   | { type: "interview.ended"; reason: string; message: string; score?: number }
   | { type: "error"; message: string };
 
