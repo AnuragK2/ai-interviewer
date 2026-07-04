@@ -29,6 +29,7 @@ model Message{
   message String
   participant MessageParticipant
   interviewId String
+  createdAt DateTime @default(now())
   interview Interview @relation(fields: [interviewId], references: [id])
 }
 

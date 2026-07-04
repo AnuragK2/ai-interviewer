@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { clearInterviewSession, loadInterviewSession } from "../lib/interviewSession";
+import { saveInterviewEndState } from "../lib/interviewEndState";
 import { stopMediaStream } from "../lib/mediaStream";
 import { useProctoring } from "../lib/proctoring/useProctoring";
 import {
@@ -159,26 +160,42 @@ export function Interview() {
           toast.warning(event.message);
           break;
         case "interview.ended":
-          toast.message(event.message, {
-            description:
-              typeof event.score === "number" ? `Score: ${event.score}` : undefined,
-          });
-          cleanupAndLeave();
+          handleInterviewEnded(event);
           break;
         default:
           break;
       }
     }
 
-    function cleanupAndLeave() {
+    function cleanupMedia() {
       realtimeRef.current?.close();
       realtimeRef.current = null;
       stopMediaStream(mediaStreamRef.current);
       mediaStreamRef.current = null;
       setMediaStream(null);
       setChecksPassed(false);
+      setAgentSpeaking(false);
+      setUserSpeaking(false);
+    }
+
+    function handleInterviewEnded(event: Extract<BackendInterviewEvent, { type: "interview.ended" }>) {
+      cleanupMedia();
+
+      if (event.reason === "cheat") {
+        saveInterviewEndState({
+          reason: "cheat",
+          message: event.message,
+          score: event.score,
+          interviewId: id!,
+          candidateName: profile?.resume.name ?? profile?.github.username,
+        });
+        clearInterviewSession(id!);
+        navigate(`/interview/${id}/proctoring-ended`, { replace: true });
+        return;
+      }
+
       clearInterviewSession(id!);
-      navigate("/");
+      navigate(`/results/${id}`, { replace: true });
     }
 
     void startRealtime();

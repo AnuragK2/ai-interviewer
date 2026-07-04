@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { Form } from "./components/Form";
 import { Interview } from "./components/Interview";
+import { ProctoringEnded } from "./components/ProctoringEnded";
 import { Result } from "./components/Result";
 
 export function App() {
@@ -12,6 +13,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Form />} />
           <Route path="/interview/:id" element={<Interview />} />
+          <Route path="/interview/:id/proctoring-ended" element={<ProctoringEnded />} />
           <Route path="/results/:id" element={<Result />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

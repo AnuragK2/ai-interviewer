@@ -40,6 +40,9 @@ type GithubData = { username?: string };
 /** Extra wait after the candidate stops speaking before the agent responds. */
 const USER_TURN_END_DELAY_MS = 2_000;
 
+/** OpenAI requires at least ~100ms of audio before commit. */
+const MIN_USER_SPEECH_MS = 100;
+
 export class InterviewRuntime {
   private openai: OpenAIRealtimeSocket | null = null;
   private interviewId: string | null = null;
@@ -55,6 +58,7 @@ export class InterviewRuntime {
   private awaitingClosingResponse = false;
   private progressTimer: ReturnType<typeof setInterval> | null = null;
   private responseDelayTimer: ReturnType<typeof setTimeout> | null = null;
+  private userSpeechStartedAt: number | null = null;
   private initialGreetingSent = false;
   private totalViolationCount = 0;
   private awaitingProctoringTermination = false;
@@ -189,7 +193,7 @@ export class InterviewRuntime {
       limit: PROCTORING_VIOLATION_LIMIT,
     });
 
-    this.openai?.cancelResponse();
+    this.openai?.cancelResponseIfActive();
     this.openai?.requestProctoringWarning(
       proctoringSignal,
       this.totalViolationCount,
@@ -249,12 +253,22 @@ export class InterviewRuntime {
         this.evaluateInterviewProgress();
         break;
       case "input_audio_buffer.speech_started":
+        this.userSpeechStartedAt = Date.now();
         this.clearResponseDelayTimer();
         this.sendClient({ type: "user_speaking", speaking: true });
         break;
-      case "input_audio_buffer.speech_stopped":
+      case "input_audio_buffer.speech_stopped": {
+        const speechMs = this.userSpeechStartedAt ? Date.now() - this.userSpeechStartedAt : 0;
+        this.userSpeechStartedAt = null;
         this.sendClient({ type: "user_speaking", speaking: false });
-        this.scheduleAgentResponse();
+
+        if (speechMs >= MIN_USER_SPEECH_MS) {
+          this.openai?.commitInputBuffer();
+          this.scheduleAgentResponse();
+        }
+        break;
+      }
+      case "input_audio_buffer.committed":
         break;
       case "session.created":
       case "session.updated":
@@ -288,14 +302,18 @@ export class InterviewRuntime {
           await this.handleUserTranscript(event.transcript);
         }
         break;
-      case "error":
-        this.sendClient({
-          type: "error",
-          message: typeof event.error === "object" && event.error && "message" in event.error
+      case "error": {
+        const message =
+          typeof event.error === "object" && event.error && "message" in event.error
             ? String((event.error as { message: string }).message)
-            : "OpenAI error.",
-        });
+            : "OpenAI error.";
+
+        if (/no active response found/i.test(message)) break;
+        if (/buffer too small/i.test(message)) break;
+
+        this.sendClient({ type: "error", message });
         break;
+      }
       default:
         break;
     }
@@ -308,7 +326,7 @@ export class InterviewRuntime {
     this.responseDelayTimer = setTimeout(() => {
       this.responseDelayTimer = null;
       if (this.ended || this.awaitingClosingResponse || !this.openai) return;
-      this.openai.commitInputAndRespond();
+      this.openai.createResponse();
     }, USER_TURN_END_DELAY_MS);
   }
 
@@ -382,7 +400,7 @@ export class InterviewRuntime {
     this.interviewPhase = "closing";
     this.clearResponseDelayTimer();
     this.openai.appendInstructions(getClosingInstructions());
-    this.openai.cancelResponse();
+    this.openai.cancelResponseIfActive();
     this.openai.requestClosingRemark(this.candidateName);
     this.awaitingClosingResponse = true;
   }

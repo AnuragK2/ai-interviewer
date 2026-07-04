@@ -29,3 +29,24 @@ export type PreInterviewResponse = {
   resume: ParsedResume;
   github: GithubProfileData;
 };
+
+export type InterviewResultMessage = {
+  id: string;
+  participant: "User" | "Assistant";
+  message: string;
+  createdAt: string;
+};
+
+export type InterviewResultsResponse = {
+  interview: InterviewSummary & { updatedAt: string };
+  candidate: {
+    name: string | null;
+    githubUsername: string | null;
+  };
+  stats: {
+    userMessages: number;
+    assistantMessages: number;
+    durationMinutes: number;
+  };
+  messages: InterviewResultMessage[];
+};

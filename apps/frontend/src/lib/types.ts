@@ -26,6 +26,27 @@ export type InterviewSummary = {
   createdAt: string;
 };
 
+export type InterviewResultMessage = {
+  id: string;
+  participant: "User" | "Assistant";
+  message: string;
+  createdAt: string;
+};
+
+export type InterviewResultsResponse = {
+  interview: InterviewSummary & { updatedAt: string };
+  candidate: {
+    name: string | null;
+    githubUsername: string | null;
+  };
+  stats: {
+    userMessages: number;
+    assistantMessages: number;
+    durationMinutes: number;
+  };
+  messages: InterviewResultMessage[];
+};
+
 export type PreInterviewResponse = {
   interview: InterviewSummary;
   resume: ParsedResume;

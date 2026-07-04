@@ -7,7 +7,8 @@ import { prisma } from "./db";
 import { fetchGithubRepos, toGithubRepoSummary } from "./lib/github";
 import { attachInterviewWebSocketServer } from "./lib/interviewWsServer";
 import { isAllowedResumeFile, parseResumeFile } from "./lib/parseResume";
-import type { PreInterviewResponse } from "./types";
+import type { ParsedResume } from "./lib/extractResumeFields";
+import type { InterviewResultsResponse, PreInterviewResponse } from "./types";
 
 const app = express();
 const upload = multer({
@@ -75,6 +76,66 @@ app.post("/api/v1/pre-interview", upload.single("resume"), async (req, res) => {
     return res.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to prepare interview.";
+    return res.status(500).json({ error: message });
+  }
+});
+
+app.get("/api/v1/interview/:id/results", async (req, res) => {
+  try {
+    const interview = await prisma.interview.findUnique({
+      where: { id: req.params.id },
+      include: {
+        conversations: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    });
+
+    if (!interview) {
+      return res.status(404).json({ error: "Interview not found." });
+    }
+
+    if (interview.status !== "COMPLETED") {
+      return res.status(400).json({
+        error: "Interview results are not available yet.",
+        status: interview.status,
+      });
+    }
+
+    const resume = (interview.resume ?? {}) as ParsedResume;
+    const github = (interview.githubMetaData ?? {}) as { username?: string };
+    const userMessages = interview.conversations.filter((m) => m.participant === "User");
+    const assistantMessages = interview.conversations.filter((m) => m.participant === "Assistant");
+    const durationMs = interview.updatedAt.getTime() - interview.createdAt.getTime();
+
+    const response: InterviewResultsResponse = {
+      interview: {
+        id: interview.id,
+        status: interview.status,
+        score: interview.score,
+        createdAt: interview.createdAt.toISOString(),
+        updatedAt: interview.updatedAt.toISOString(),
+      },
+      candidate: {
+        name: resume.name ?? null,
+        githubUsername: github.username ?? null,
+      },
+      stats: {
+        userMessages: userMessages.length,
+        assistantMessages: assistantMessages.length,
+        durationMinutes: Math.max(1, Math.round(durationMs / 60_000)),
+      },
+      messages: interview.conversations.map((message) => ({
+        id: message.id,
+        participant: message.participant,
+        message: message.message,
+        createdAt: message.createdAt.toISOString(),
+      })),
+    };
+
+    return res.json(response);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to load interview results.";
     return res.status(500).json({ error: message });
   }
 });

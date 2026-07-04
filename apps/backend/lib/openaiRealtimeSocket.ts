@@ -20,8 +20,28 @@ export class OpenAIRealtimeSocket {
   private ws: WebSocket | null = null;
   private closed = false;
   private baseInstructions = "";
+  private responseActive = false;
 
   constructor(private readonly options: OpenAIRealtimeSocketOptions) {}
+
+  private trackResponseState(event: Record<string, unknown>) {
+    const type = String(event.type ?? "");
+
+    if (type === "response.created" || type === "output_audio_buffer.started") {
+      this.responseActive = true;
+      return;
+    }
+
+    if (
+      type === "response.done" ||
+      type === "response.cancelled" ||
+      type === "response.output_audio.done" ||
+      type === "response.audio.done" ||
+      type === "output_audio_buffer.stopped"
+    ) {
+      this.responseActive = false;
+    }
+  }
 
   async connect() {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -51,6 +71,7 @@ export class OpenAIRealtimeSocket {
     this.ws.addEventListener("message", (message) => {
       try {
         const event = JSON.parse(String(message.data)) as Record<string, unknown>;
+        this.trackResponseState(event);
         this.options.onEvent(event);
       } catch {
         this.options.onError("Received malformed event from OpenAI.");
@@ -118,8 +139,11 @@ export class OpenAIRealtimeSocket {
     this.send({ type: "response.create" });
   }
 
-  commitInputAndRespond() {
+  commitInputBuffer() {
     this.send({ type: "input_audio_buffer.commit" });
+  }
+
+  createResponse() {
     this.send({ type: "response.create" });
   }
 
@@ -158,18 +182,16 @@ export class OpenAIRealtimeSocket {
     });
   }
 
-  cancelResponse() {
+  cancelResponseIfActive() {
+    if (!this.responseActive) return;
+    this.responseActive = false;
     this.send({ type: "response.cancel" });
   }
 
   close() {
     if (this.closed) return;
     this.closed = true;
-    try {
-      this.cancelResponse();
-    } catch {
-      // ignore
-    }
+    this.cancelResponseIfActive();
     this.ws?.close();
     this.ws = null;
   }
