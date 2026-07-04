@@ -1,12 +1,13 @@
+import http from "node:http";
 import cors from "cors";
 import express from "express";
 import multer from "multer";
 import { z } from "zod";
-import { isAllowedResumeFile, parseResumeFile } from "./lib/parseResume";
-import { fetchGithubRepos, toGithubRepoSummary } from "./lib/github";
-import { createRealtimeSdpAnswer } from "./lib/realtimeSession";
-import type { PreInterviewResponse } from "./types";
 import { prisma } from "./db";
+import { fetchGithubRepos, toGithubRepoSummary } from "./lib/github";
+import { attachInterviewWebSocketServer } from "./lib/interviewWsServer";
+import { isAllowedResumeFile, parseResumeFile } from "./lib/parseResume";
+import type { PreInterviewResponse } from "./types";
 
 const app = express();
 const upload = multer({
@@ -78,44 +79,12 @@ app.post("/api/v1/pre-interview", upload.single("resume"), async (req, res) => {
   }
 });
 
-app.post(
-  "/api/v1/interview/:id/session",
-  express.text({ type: ["application/sdp", "text/plain", "*/*"] }),
-  async (req, res) => {
-    try {
-      const interviewId = req.params.id;
-      const offerSdp = typeof req.body === "string" ? req.body : "";
-
-      const interview = await prisma.interview.findUnique({
-        where: { id: interviewId },
-      });
-
-      if (!interview) {
-        return res.status(404).json({ error: "Interview not found." });
-      }
-
-      const answerSdp = await createRealtimeSdpAnswer(offerSdp, {
-        id: interview.id,
-        resume: interview.resume,
-        githubMetaData: interview.githubMetaData,
-      });
-
-      await prisma.interview.update({
-        where: { id: interview.id },
-        data: { status: "IN_PROGRESS" },
-      });
-
-      res.type("application/sdp");
-      return res.send(answerSdp);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to start interview session.";
-      return res.status(500).json({ error: message });
-    }
-  },
-);
-
 const port = Number(process.env.PORT) || 3001;
+const server = http.createServer(app);
 
-app.listen(port, () => {
+attachInterviewWebSocketServer(server);
+
+server.listen(port, () => {
   console.log(`Backend running on port ${port}`);
+  console.log(`Interview WebSocket available at ws://localhost:${port}/api/v1/interview/ws`);
 });

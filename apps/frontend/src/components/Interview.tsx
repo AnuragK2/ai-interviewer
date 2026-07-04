@@ -4,11 +4,13 @@ import { clearInterviewSession, loadInterviewSession } from "../lib/interviewSes
 import { stopMediaStream } from "../lib/mediaStream";
 import {
   connectRealtimeInterview,
+  type BackendInterviewEvent,
+  type CheatSignal,
   type RealtimeConnection,
-  type RealtimeServerEvent,
 } from "../lib/realtimeInterview";
 import { MediaCheck } from "./MediaCheck";
 import { InterviewRoom, type TranscriptMessage } from "./InterviewRoom";
+import { toast } from "sonner";
 
 type ConnectionStatus = "idle" | "connecting" | "connected" | "failed";
 
@@ -67,15 +69,13 @@ export function Interview() {
           mediaStream: mediaStream!,
           onConnectionStateChange(state) {
             if (state === "connected") setConnectionStatus("connected");
-            if (state === "failed" || state === "disconnected") {
+            if (state === "failed") {
               setConnectionStatus("failed");
-              setConnectionError("Realtime connection was lost.");
-              setAgentSpeaking(false);
-              setUserSpeaking(false);
+              setConnectionError("Realtime connection failed.");
             }
           },
           onEvent(event) {
-            handleRealtimeEvent(event);
+            handleBackendEvent(event);
           },
         });
 
@@ -93,99 +93,75 @@ export function Interview() {
       }
     }
 
-    function appendAgentDelta(delta: string) {
-      setAgentSpeaking(true);
-      setTranscript((current) => {
-        const activeId = agentMessageIdRef.current;
-        if (activeId) {
-          return current.map((message) =>
-            message.id === activeId ? { ...message, text: `${message.text}${delta}` } : message,
-          );
-        }
-
-        const messageId = createMessageId();
-        agentMessageIdRef.current = messageId;
-        return [...current, { id: messageId, role: "agent", text: delta }];
-      });
-    }
-
-    function finalizeAgentTranscript(transcriptText: string) {
-      agentMessageIdRef.current = null;
-      const text = transcriptText.trim();
-      if (!text) return;
-
-      setTranscript((current) => {
-        const last = current[current.length - 1];
-        if (last?.role === "agent") {
-          return current.map((message, index) =>
-            index === current.length - 1 ? { ...message, text } : message,
-          );
-        }
-        return [...current, { id: createMessageId(), role: "agent", text }];
-      });
-    }
-
-    function appendUserTranscript(transcriptText: string) {
-      setUserSpeaking(false);
-      const text = transcriptText.trim();
-      if (!text) return;
-      setTranscript((current) => [...current, { id: createMessageId(), role: "user", text }]);
-    }
-
-    function handleRealtimeEvent(event: RealtimeServerEvent | string) {
-      if (typeof event === "string") return;
-
+    function handleBackendEvent(event: BackendInterviewEvent) {
       switch (event.type) {
-        case "response.created":
-        case "response.output_audio.delta":
-        case "response.audio.delta":
-        case "output_audio_buffer.started":
-          setAgentSpeaking(true);
+        case "agent_speaking":
+          setAgentSpeaking(event.speaking);
+          if (!event.speaking) agentMessageIdRef.current = null;
           break;
-        case "response.done":
-        case "response.output_audio.done":
-        case "response.audio.done":
-        case "output_audio_buffer.stopped":
-          setAgentSpeaking(false);
-          agentMessageIdRef.current = null;
+        case "user_speaking":
+          setUserSpeaking(event.speaking);
           break;
-        case "input_audio_buffer.speech_started":
-          setUserSpeaking(true);
-          break;
-        case "input_audio_buffer.speech_stopped":
-          setUserSpeaking(false);
-          break;
-        // GA event names
-        case "response.output_audio_transcript.delta":
-        case "response.output_text.delta":
-        // Preview event names
-        case "response.audio_transcript.delta":
-        case "response.text.delta":
-          if (typeof event.delta === "string" && event.delta) {
-            appendAgentDelta(event.delta);
+        case "transcript":
+          if (event.role === "agent") {
+            if (event.final) {
+              agentMessageIdRef.current = null;
+              setTranscript((current) => {
+                const last = current[current.length - 1];
+                if (last?.role === "agent") {
+                  return current.map((message, index) =>
+                    index === current.length - 1 ? { ...message, text: event.text } : message,
+                  );
+                }
+                return [...current, { id: createMessageId(), role: "agent", text: event.text }];
+              });
+            } else {
+              setTranscript((current) => {
+                const activeId = agentMessageIdRef.current;
+                if (activeId) {
+                  return current.map((message) =>
+                    message.id === activeId
+                      ? { ...message, text: `${message.text}${event.text}` }
+                      : message,
+                  );
+                }
+                const messageId = createMessageId();
+                agentMessageIdRef.current = messageId;
+                return [...current, { id: messageId, role: "agent", text: event.text }];
+              });
+            }
+          } else if (event.final) {
+            setTranscript((current) => [
+              ...current,
+              { id: createMessageId(), role: "user", text: event.text },
+            ]);
           }
           break;
-        case "response.output_audio_transcript.done":
-        case "response.output_text.done":
-        case "response.audio_transcript.done":
-        case "response.text.done":
-          if (typeof event.transcript === "string") {
-            finalizeAgentTranscript(event.transcript);
-          } else if (typeof event.text === "string") {
-            finalizeAgentTranscript(event.text);
-          } else {
-            agentMessageIdRef.current = null;
-          }
+        case "error":
+          setConnectionStatus("failed");
+          setConnectionError(event.message);
           break;
-        case "conversation.item.input_audio_transcription.completed":
-        case "conversation.item.input_audio_transcription.delta":
-          if (event.type.endsWith(".completed") && typeof event.transcript === "string") {
-            appendUserTranscript(event.transcript);
-          }
+        case "interview.ended":
+          toast.message(event.message, {
+            description:
+              typeof event.score === "number" ? `Score: ${event.score}` : undefined,
+          });
+          cleanupAndLeave();
           break;
         default:
           break;
       }
+    }
+
+    function cleanupAndLeave() {
+      realtimeRef.current?.close();
+      realtimeRef.current = null;
+      stopMediaStream(mediaStreamRef.current);
+      mediaStreamRef.current = null;
+      setMediaStream(null);
+      setChecksPassed(false);
+      clearInterviewSession(id!);
+      navigate("/");
     }
 
     void startRealtime();
@@ -195,7 +171,34 @@ export function Interview() {
       realtimeRef.current?.close();
       realtimeRef.current = null;
     };
-  }, [checksPassed, mediaStream, id, profile]);
+  }, [checksPassed, mediaStream, id, profile, navigate]);
+
+  useEffect(() => {
+    if (!checksPassed || connectionStatus !== "connected") return;
+
+    const sendCheat = (signal: CheatSignal) => {
+      realtimeRef.current?.sendCheatSignal(signal);
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) sendCheat("tab_hidden");
+    };
+    const onBlur = () => sendCheat("window_blur");
+    const onCopy = () => sendCheat("copy");
+    const onPaste = () => sendCheat("paste");
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("copy", onCopy);
+    document.addEventListener("paste", onPaste);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("copy", onCopy);
+      document.removeEventListener("paste", onPaste);
+    };
+  }, [checksPassed, connectionStatus]);
 
   if (!id || !profile) {
     return <Navigate to="/" replace />;
@@ -204,6 +207,7 @@ export function Interview() {
   const candidateName = profile.resume.name ?? profile.github.username ?? "Candidate";
 
   function exitInterview() {
+    realtimeRef.current?.endInterview();
     realtimeRef.current?.close();
     realtimeRef.current = null;
     stopMediaStream(mediaStreamRef.current);

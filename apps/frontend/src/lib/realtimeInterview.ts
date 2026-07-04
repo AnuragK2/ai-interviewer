@@ -1,24 +1,38 @@
 import { BACKEND_URL } from "./config";
+import { createAudioPlayer, createMicStreamer } from "./audioBridge";
 
-export type RealtimeServerEvent = {
-  type: string;
-  [key: string]: unknown;
-};
+export type CheatSignal = "tab_hidden" | "window_blur" | "copy" | "paste";
+
+export type BackendInterviewEvent =
+  | { type: "session.ready" }
+  | { type: "transcript"; role: "agent" | "user"; text: string; final?: boolean }
+  | { type: "agent_speaking"; speaking: boolean }
+  | { type: "user_speaking"; speaking: boolean }
+  | { type: "output_audio"; audio: string }
+  | { type: "interview.ended"; reason: string; message: string; score?: number }
+  | { type: "error"; message: string };
 
 export type RealtimeConnection = {
-  pc: RTCPeerConnection;
-  dc: RTCDataChannel;
-  audioElement: HTMLAudioElement;
-  sendEvent: (event: Record<string, unknown>) => void;
+  sendCheatSignal: (signal: CheatSignal) => void;
+  endInterview: () => void;
   close: () => void;
 };
 
 type ConnectOptions = {
   interviewId: string;
   mediaStream: MediaStream;
-  onEvent?: (event: RealtimeServerEvent | string) => void;
-  onConnectionStateChange?: (state: RTCPeerConnectionState) => void;
+  onEvent?: (event: BackendInterviewEvent) => void;
+  onConnectionStateChange?: (state: "connecting" | "connected" | "failed" | "closed") => void;
 };
+
+function toWebSocketUrl(httpUrl: string) {
+  const url = new URL(httpUrl);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  url.pathname = "/api/v1/interview/ws";
+  url.search = "";
+  url.hash = "";
+  return url.toString();
+}
 
 export async function connectRealtimeInterview({
   interviewId,
@@ -26,85 +40,93 @@ export async function connectRealtimeInterview({
   onEvent,
   onConnectionStateChange,
 }: ConnectOptions): Promise<RealtimeConnection> {
-  const pc = new RTCPeerConnection();
+  onConnectionStateChange?.("connecting");
 
-  const audioElement = document.createElement("audio");
-  audioElement.autoplay = true;
+  const ws = new WebSocket(toWebSocketUrl(BACKEND_URL));
+  const player = createAudioPlayer();
+  let micStreamer: ReturnType<typeof createMicStreamer> | null = null;
+  let closed = false;
 
-  pc.ontrack = (event) => {
-    audioElement.srcObject = event.streams[0] ?? null;
-  };
-
-  const audioTrack = mediaStream.getAudioTracks()[0];
-  if (!audioTrack) {
-    pc.close();
-    throw new Error("No microphone track available for the interview.");
-  }
-
-  pc.addTrack(audioTrack, mediaStream);
-
-  const dc = pc.createDataChannel("oai-events");
-
-  dc.addEventListener("message", (event) => {
-    try {
-      onEvent?.(JSON.parse(String(event.data)) as RealtimeServerEvent);
-    } catch {
-      onEvent?.(String(event.data));
+  const send = (payload: Record<string, unknown>) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload));
     }
-  });
-
-  pc.onconnectionstatechange = () => {
-    onConnectionStateChange?.(pc.connectionState);
   };
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-
-  if (!offer.sdp) {
-    pc.close();
-    throw new Error("Failed to create WebRTC offer.");
-  }
-
-  const sdpResponse = await fetch(`${BACKEND_URL}/api/v1/interview/${interviewId}/session`, {
-    method: "POST",
-    body: offer.sdp,
-    headers: {
-      "Content-Type": "application/sdp",
-    },
+  await new Promise<void>((resolve, reject) => {
+    ws.addEventListener("open", () => resolve(), { once: true });
+    ws.addEventListener(
+      "error",
+      () => reject(new Error("Failed to connect interview WebSocket.")),
+      { once: true },
+    );
   });
 
-  if (!sdpResponse.ok) {
-    const details = await sdpResponse.text();
-    pc.close();
-    throw new Error(details || "Failed to start realtime interview session.");
-  }
+  await player.resume();
+  micStreamer = createMicStreamer(mediaStream, (audio) => {
+    send({ type: "input_audio", audio });
+  });
+  await micStreamer.resume();
 
-  const answer: RTCSessionDescriptionInit = {
-    type: "answer",
-    sdp: await sdpResponse.text(),
-  };
+  send({ type: "join", interviewId });
+  onConnectionStateChange?.("connected");
 
-  await pc.setRemoteDescription(answer);
+  ws.addEventListener("message", (message) => {
+    let event: BackendInterviewEvent;
+    try {
+      event = JSON.parse(String(message.data)) as BackendInterviewEvent;
+    } catch {
+      return;
+    }
+
+    if (event.type === "output_audio") {
+      player.playPcm16Base64(event.audio);
+    }
+
+    if (event.type === "session.ready") {
+      onConnectionStateChange?.("connected");
+    }
+
+    if (event.type === "error") {
+      onConnectionStateChange?.("failed");
+    }
+
+    if (event.type === "interview.ended") {
+      onConnectionStateChange?.("closed");
+    }
+
+    onEvent?.(event);
+  });
+
+  ws.addEventListener("close", () => {
+    if (closed) return;
+    closed = true;
+    micStreamer?.stop();
+    player.stop();
+    onConnectionStateChange?.("closed");
+  });
+
+  ws.addEventListener("error", () => {
+    onConnectionStateChange?.("failed");
+  });
 
   return {
-    pc,
-    dc,
-    audioElement,
-    sendEvent(event) {
-      if (dc.readyState === "open") {
-        dc.send(JSON.stringify(event));
-      }
+    sendCheatSignal(signal) {
+      send({ type: "cheat_signal", signal });
+    },
+    endInterview() {
+      send({ type: "end_interview" });
     },
     close() {
+      if (closed) return;
+      closed = true;
+      micStreamer?.stop();
+      player.stop();
       try {
-        dc.close();
+        ws.close();
       } catch {
         // ignore
       }
-      pc.close();
-      audioElement.pause();
-      audioElement.srcObject = null;
-      audioElement.remove();
     },
   };
 }
