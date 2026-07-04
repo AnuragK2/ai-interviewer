@@ -1,7 +1,7 @@
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Modal,
   ModalBody,
@@ -10,18 +10,18 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "./ui/modal";
+} from "@/components/ui/modal";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { BACKEND_URL } from "@/lib/config";
-import { INTERVIEW_DISCLAIMERS } from "@/lib/disclaimer";
-import { saveInterviewSession } from "../lib/interviewSession";
+import { BACKEND_URL } from "@/shared/api/config";
+import { INTERVIEW_DISCLAIMERS } from "@/features/pre-interview/constants/disclaimer";
+import { saveInterviewSession } from "@/shared/lib/interview-session";
 import axios from "axios";
-import type { PreInterviewResponse } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import type { PreInterviewResponse } from "@/shared/api/types";
+import { cn } from "@/shared/lib/utils";
 import { ArrowLeft, ArrowRight, Code2, FileText, Loader2, ShieldAlert, Sparkles, Upload, X } from "lucide-react";
-import { PageShell } from "./PageShell";
+import { PageShell } from "@/shared/components/PageShell";
 
 export function Form() {
   const navigate = useNavigate();

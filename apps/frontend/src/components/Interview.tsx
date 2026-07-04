@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
-import { clearInterviewSession, loadInterviewSession } from "../lib/interviewSession";
-import { saveInterviewEndState } from "../lib/interviewEndState";
-import { stopMediaStream } from "../lib/mediaStream";
-import { useProctoring } from "../lib/proctoring/useProctoring";
+import { clearInterviewSession, loadInterviewSession } from "@/shared/lib/interview-session";
+import { saveInterviewEndState } from "@/shared/lib/interview-end-state";
+import { stopMediaStream } from "@/shared/lib/media-stream";
+import { useProctoring } from "@/features/proctoring/hooks/use-proctoring";
 import {
   connectRealtimeInterview,
   type BackendInterviewEvent,
   type CheatSignal,
   type RealtimeConnection,
-} from "../lib/realtimeInterview";
+} from "@/features/interview/services/realtime-interview";
 import { MediaCheck } from "./MediaCheck";
 import { InterviewRoom, type TranscriptMessage } from "./InterviewRoom";
 import { toast } from "sonner";

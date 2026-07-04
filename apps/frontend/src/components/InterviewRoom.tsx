@@ -1,8 +1,8 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
-import { PageShell } from "./PageShell";
-import { Button } from "./ui/button";
-import { cn } from "../lib/utils";
-import type { ProctoringState } from "../lib/proctoring/useProctoring";
+import { PageShell } from "@/shared/components/PageShell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/lib/utils";
+import type { ProctoringState } from "@/features/proctoring/hooks/use-proctoring";
 import {
   Bot,
   Camera,

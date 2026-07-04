@@ -1,7 +1,7 @@
 import { Navigate, useNavigate, useParams } from "react-router";
-import { PageShell } from "./PageShell";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
+import { PageShell } from "@/shared/components/PageShell";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Camera,
@@ -12,7 +12,7 @@ import {
   ShieldAlert,
   VideoOff,
 } from "lucide-react";
-import { clearInterviewEndState, loadInterviewEndState } from "../lib/interviewEndState";
+import { clearInterviewEndState, loadInterviewEndState } from "@/shared/lib/interview-end-state";
 
 const VIOLATION_ITEMS = [
   { icon: Eye, label: "Looking away from the camera" },

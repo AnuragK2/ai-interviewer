@@ -2,7 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 function Modal({ ...props }: React.ComponentProps<typeof Dialog.Root>) {
   return <Dialog.Root data-slot="modal" {...props} />;

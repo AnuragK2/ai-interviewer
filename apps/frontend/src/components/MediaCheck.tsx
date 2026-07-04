@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PageShell } from "./PageShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
+import { PageShell } from "@/shared/components/PageShell";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Modal,
   ModalBody,
@@ -10,9 +10,9 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "./ui/modal";
+} from "@/components/ui/modal";
 import { Camera, CheckCircle2, Loader2, Mic, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
-import { cn } from "../lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 type DeviceStatus = "idle" | "requesting" | "ready" | "error";
 type CheckPhase = "consent" | "checking";

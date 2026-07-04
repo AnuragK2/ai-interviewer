@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import axios from "axios";
-import { PageShell } from "./PageShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { cn } from "../lib/utils";
-import { BACKEND_URL } from "../lib/config";
-import type { InterviewResultsResponse } from "../lib/types";
+import { PageShell } from "@/shared/components/PageShell";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/shared/lib/utils";
+import { BACKEND_URL } from "@/shared/api/config";
+import type { InterviewResultsResponse } from "@/shared/api/types";
 import {
   ArrowRight,
   Clock,
