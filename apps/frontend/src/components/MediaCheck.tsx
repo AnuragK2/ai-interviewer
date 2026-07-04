@@ -2,10 +2,20 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PageShell } from "./PageShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "./ui/modal";
 import { Camera, CheckCircle2, Loader2, Mic, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
 import { cn } from "../lib/utils";
 
 type DeviceStatus = "idle" | "requesting" | "ready" | "error";
+type CheckPhase = "consent" | "checking";
 
 type MediaCheckProps = {
   candidateName: string;
@@ -51,6 +61,7 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
   const animationFrameRef = useRef<number | null>(null);
   const requestIdRef = useRef(0);
 
+  const [phase, setPhase] = useState<CheckPhase>("consent");
   const [cameraStatus, setCameraStatus] = useState<DeviceStatus>("idle");
   const [micStatus, setMicStatus] = useState<DeviceStatus>("idle");
   const [micLevel, setMicLevel] = useState(0);
@@ -111,6 +122,7 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
     const requestId = ++requestIdRef.current;
 
     stopTracksOnly();
+    setPhase("checking");
     setError(null);
     setCameraStatus("requesting");
     setMicStatus("requesting");
@@ -122,7 +134,6 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
         audio: true,
       });
 
-      // A newer request (or unmount) started — discard this stream.
       if (requestId !== requestIdRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -147,7 +158,6 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
         try {
           await video.play();
         } catch (playError) {
-          // StrictMode / rapid re-requests interrupt play(); tracks can still be live.
           if (!isPlayAbortError(playError) || videoTrack.readyState !== "live") {
             throw playError;
           }
@@ -185,14 +195,17 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
   }
 
   useEffect(() => {
-    void requestMedia();
+    // Always start from consent. Never auto-request media on mount.
+    setPhase("consent");
+    setCameraStatus("idle");
+    setMicStatus("idle");
+    setMicLevel(0);
+    setError(null);
 
     return () => {
-      // Invalidate in-flight requests so their catch handlers don't kill the next stream.
       requestIdRef.current += 1;
       stopMedia();
     };
-    // Intentionally mount-only: StrictMode remounts once; request ids prevent races.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -202,7 +215,6 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
     const stream = streamRef.current;
     if (!stream || !bothReady) return;
 
-    // Hand ownership of the stream to the parent so tracks stay alive.
     streamRef.current = null;
     onReady(stream);
   }
@@ -213,8 +225,69 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
     onExit();
   }
 
+  function handleRetryFromError() {
+    setPhase("consent");
+    setCameraStatus("idle");
+    setMicStatus("idle");
+    setMicLevel(0);
+    setError(null);
+    stopMedia();
+  }
+
   return (
     <PageShell>
+      <Modal open={phase === "consent"}>
+        <ModalContent
+          aria-describedby="permission-description"
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
+          <ModalHeader>
+            <ModalTitle>Camera & microphone access</ModalTitle>
+            <ModalDescription id="permission-description">
+              {candidateName}, we need access to your camera and microphone before the interview can start.
+            </ModalDescription>
+          </ModalHeader>
+
+          <ModalBody className="space-y-3 rounded-xl border border-border/50 bg-secondary/20 p-4">
+            <div className="flex items-start gap-3 text-sm">
+              <Camera className="mt-0.5 h-4 w-4 shrink-0 text-teal-300" />
+              <div>
+                <p className="font-medium">Camera</p>
+                <p className="text-muted-foreground">Used for your live video during the interview.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 text-sm">
+              <Mic className="mt-0.5 h-4 w-4 shrink-0 text-teal-300" />
+              <div>
+                <p className="font-medium">Microphone</p>
+                <p className="text-muted-foreground">Used so the interviewer can hear your answers.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 text-sm text-muted-foreground">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+              <p>
+                Your browser will ask for permission next. You cannot continue without granting both camera and
+                microphone access.
+              </p>
+            </div>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="outline" onClick={handleExit} className="border-border/60 bg-secondary/20">
+              Exit interview
+            </Button>
+            <Button
+              onClick={() => void requestMedia()}
+              className="bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400"
+            >
+              Allow camera & microphone
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <div className="flex min-h-screen items-center justify-center p-6">
         <Card className="w-full max-w-2xl border-border/60 bg-card/70 shadow-2xl shadow-teal-950/20 backdrop-blur-xl">
           <CardHeader className="border-b border-border/50">
@@ -225,14 +298,16 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
               <div>
                 <CardTitle>Device check required</CardTitle>
                 <CardDescription>
-                  {candidateName}, enable your camera and microphone before starting the interview.
+                  {phase === "consent"
+                    ? "Grant permission in the dialog to begin device checks."
+                    : "Verify your camera and microphone are working before continuing."}
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-6 pt-6">
-            <div className="overflow-hidden rounded-xl border border-border/60 bg-black/40">
+            <div className="relative overflow-hidden rounded-xl border border-border/60 bg-black/40">
               <video
                 ref={videoRef}
                 autoPlay
@@ -240,17 +315,28 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
                 muted
                 className={cn(
                   "aspect-video w-full object-cover",
-                  cameraStatus !== "ready" && "opacity-40",
+                  (phase === "consent" || cameraStatus !== "ready") && "opacity-0",
                 )}
               />
+              {(phase === "consent" || cameraStatus !== "ready") && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-secondary/30 text-sm text-muted-foreground">
+                  {cameraStatus === "requesting" ? (
+                    <>
+                      <Loader2 className="h-8 w-8 animate-spin opacity-70" />
+                      Requesting camera & microphone...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-8 w-8 opacity-50" />
+                      {phase === "consent" ? "Waiting for permission..." : "Camera unavailable"}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <DeviceStatusCard
-                icon={<Camera className="h-4 w-4" />}
-                label="Camera"
-                status={cameraStatus}
-              />
+              <DeviceStatusCard icon={<Camera className="h-4 w-4" />} label="Camera" status={cameraStatus} />
               <DeviceStatusCard
                 icon={<Mic className="h-4 w-4" />}
                 label="Microphone"
@@ -266,7 +352,8 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
             )}
 
             <p className="text-xs leading-relaxed text-muted-foreground">
-              You cannot continue without a working camera and microphone. Speak briefly to confirm your mic is active.
+              You cannot continue without a working camera and microphone. Speak briefly to confirm your mic is
+              active.
             </p>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -274,10 +361,19 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
                 Exit interview
               </Button>
               <div className="flex flex-col gap-3 sm:flex-row">
-                {!bothReady && (
-                  <Button variant="secondary" onClick={() => void requestMedia()}>
+                {phase === "checking" && !bothReady && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (cameraStatus === "error" || micStatus === "error") {
+                        handleRetryFromError();
+                      } else {
+                        void requestMedia();
+                      }
+                    }}
+                  >
                     <RefreshCw className="h-4 w-4" />
-                    Retry devices
+                    {cameraStatus === "error" || micStatus === "error" ? "Request permission again" : "Retry devices"}
                   </Button>
                 )}
                 <Button
