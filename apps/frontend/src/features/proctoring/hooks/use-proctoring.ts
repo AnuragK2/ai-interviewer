@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { CheatSignal } from "@ai-interviewer/api-types";
 import {
+  FACE_MISS_DEBOUNCE_SAMPLES,
   GAZE_SAMPLE_INTERVAL_MS,
   GAZE_SOFT_WARNING_MS,
   GAZE_STRIKE_MS,
@@ -95,6 +96,7 @@ export function useProctoring({
     let activeViolation: GazeViolation | null = null;
     let softWarningSentForEpisode = false;
     let strikeSentForEpisode = false;
+    let consecutiveFaceMisses = 0;
 
     setState({ status: "initializing", message: "Starting proctoring..." });
 
@@ -119,8 +121,18 @@ export function useProctoring({
           const analysis = monitor!.analyze(video);
           const now = Date.now();
 
-          if ("violation" in analysis) {
-            const violation = analysis.violation;
+          let effectiveAnalysis = analysis;
+          if ("violation" in analysis && analysis.violation === "face_not_visible") {
+            consecutiveFaceMisses += 1;
+            if (consecutiveFaceMisses < FACE_MISS_DEBOUNCE_SAMPLES) {
+              effectiveAnalysis = { ok: true };
+            }
+          } else {
+            consecutiveFaceMisses = 0;
+          }
+
+          if ("violation" in effectiveAnalysis) {
+            const violation = effectiveAnalysis.violation;
 
             if (activeViolation !== violation) {
               activeViolation = violation;

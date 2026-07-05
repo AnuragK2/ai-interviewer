@@ -1,0 +1,19 @@
+{
+  "name": "@ai-interviewer/event-bus",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@ai-interviewer/api-types": "workspace:*",
+    "nats": "^2.29.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5"
+  }
+}

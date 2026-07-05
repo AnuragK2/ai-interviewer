@@ -1,0 +1,17 @@
+export const env = {
+  port: Number(process.env.PORT) || 3001,
+  serviceName: process.env.SERVICE_NAME ?? "interview-service",
+  openaiApiKey: process.env.OPENAI_API_KEY,
+  openaiRealtimeModel: process.env.OPENAI_REALTIME_MODEL ?? "gpt-realtime-2",
+  openaiRealtimeVoice: process.env.OPENAI_REALTIME_VOICE ?? "marin",
+  githubToken: process.env.GITHUB_TOKEN,
+  proxyUrl: process.env.PROXY_URL,
+  databaseUrl: process.env.DATABASE_URL,
+  natsUrl: process.env.NATS_URL ?? "nats://localhost:4222",
+  minioEndpoint: process.env.MINIO_ENDPOINT ?? "localhost",
+  minioPort: Number(process.env.MINIO_PORT ?? 9000),
+  minioUseSsl: process.env.MINIO_USE_SSL === "true",
+  minioAccessKey: process.env.MINIO_ACCESS_KEY ?? "minio",
+  minioSecretKey: process.env.MINIO_SECRET_KEY ?? "minio123",
+  minioBucket: process.env.MINIO_BUCKET ?? "platform-media",
+} as const;

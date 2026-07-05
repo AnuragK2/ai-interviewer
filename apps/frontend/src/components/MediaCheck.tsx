@@ -131,7 +131,11 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
-        audio: true,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
 
       if (requestId !== requestIdRef.current) {

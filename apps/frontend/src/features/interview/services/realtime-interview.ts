@@ -26,30 +26,79 @@ function toWebSocketUrl(httpUrl: string) {
   return url.toString();
 }
 
+function logInterviewWs(message: string, data?: Record<string, unknown>) {
+  if (data) {
+    console.info(`[interview-ws] ${message}`, data);
+  } else {
+    console.info(`[interview-ws] ${message}`);
+  }
+}
+
 export async function connectRealtimeInterview({
   interviewId,
   mediaStream,
   onEvent,
   onConnectionStateChange,
 }: ConnectOptions): Promise<RealtimeConnection> {
+  const wsUrl = toWebSocketUrl(BACKEND_URL);
+  logInterviewWs("connecting", { wsUrl, interviewId, backendUrl: BACKEND_URL });
   onConnectionStateChange?.("connecting");
 
-  const ws = new WebSocket(toWebSocketUrl(BACKEND_URL));
+  const ws = new WebSocket(wsUrl);
   const player = createAudioPlayer();
   let micStreamer: ReturnType<typeof createMicStreamer> | null = null;
   let closed = false;
+  let closeReason = "unknown";
 
   const send = (payload: Record<string, unknown>) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(payload));
+    } else {
+      logInterviewWs("send skipped — socket not open", {
+        readyState: ws.readyState,
+        type: payload.type,
+      });
     }
   };
 
   await new Promise<void>((resolve, reject) => {
-    ws.addEventListener("open", () => resolve(), { once: true });
+    const timeoutId = window.setTimeout(() => {
+      closeReason = "timeout (10s)";
+      reject(new Error(`WebSocket connect timeout to ${wsUrl}`));
+    }, 10_000);
+
+    ws.addEventListener(
+      "open",
+      () => {
+        window.clearTimeout(timeoutId);
+        logInterviewWs("socket open");
+        resolve();
+      },
+      { once: true },
+    );
+
+    ws.addEventListener(
+      "close",
+      (event) => {
+        window.clearTimeout(timeoutId);
+        closeReason = `closed before open code=${event.code} reason=${event.reason || "none"}`;
+        logInterviewWs("socket closed during connect", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+        });
+        reject(new Error(`Failed to connect interview WebSocket (${closeReason}).`));
+      },
+      { once: true },
+    );
+
     ws.addEventListener(
       "error",
-      () => reject(new Error("Failed to connect interview WebSocket.")),
+      () => {
+        window.clearTimeout(timeoutId);
+        logInterviewWs("socket error during connect", { closeReason });
+        reject(new Error(`Failed to connect interview WebSocket (${closeReason}).`));
+      },
       { once: true },
     );
   });
@@ -60,6 +109,7 @@ export async function connectRealtimeInterview({
   });
   await micStreamer.resume();
 
+  logInterviewWs("sending join", { interviewId });
   send({ type: "join", interviewId });
   onConnectionStateChange?.("connected");
 
@@ -68,7 +118,12 @@ export async function connectRealtimeInterview({
     try {
       event = JSON.parse(String(message.data)) as ServerInterviewEvent;
     } catch {
+      logInterviewWs("invalid JSON from server");
       return;
+    }
+
+    if (event.type !== "output_audio") {
+      logInterviewWs("event", { type: event.type });
     }
 
     if (event.type === "output_audio") {
@@ -76,10 +131,12 @@ export async function connectRealtimeInterview({
     }
 
     if (event.type === "session.ready") {
+      logInterviewWs("session.ready received");
       onConnectionStateChange?.("connected");
     }
 
     if (event.type === "error") {
+      logInterviewWs("server error", { message: event.message });
       onConnectionStateChange?.("failed");
     }
 
@@ -90,7 +147,12 @@ export async function connectRealtimeInterview({
     onEvent?.(event);
   });
 
-  ws.addEventListener("close", () => {
+  ws.addEventListener("close", (event) => {
+    logInterviewWs("socket closed", {
+      code: event.code,
+      reason: event.reason,
+      wasClean: event.wasClean,
+    });
     if (closed) return;
     closed = true;
     micStreamer?.stop();
@@ -99,6 +161,7 @@ export async function connectRealtimeInterview({
   });
 
   ws.addEventListener("error", () => {
+    logInterviewWs("socket error after connect");
     onConnectionStateChange?.("failed");
   });
 

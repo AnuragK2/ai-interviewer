@@ -1,4 +1,7 @@
 const TARGET_SAMPLE_RATE = 24000;
+const PROCESSOR_BUFFER_SIZE = 2048;
+const NOISE_GATE_OPEN_RMS = 0.012;
+const NOISE_GATE_CLOSE_RMS = 0.008;
 
 function floatTo16BitPCM(float32: Float32Array) {
   const buffer = new ArrayBuffer(float32.length * 2);
@@ -52,14 +55,37 @@ function downsampleBuffer(buffer: Float32Array, inputSampleRate: number, outputS
   return result;
 }
 
+function computeRms(buffer: Float32Array) {
+  if (buffer.length === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    const sample = buffer[i] ?? 0;
+    sum += sample * sample;
+  }
+  return Math.sqrt(sum / buffer.length);
+}
+
 export function createMicStreamer(mediaStream: MediaStream, onAudio: (base64Pcm16: string) => void) {
   const audioContext = new AudioContext();
   const source = audioContext.createMediaStreamSource(mediaStream);
-  const processor = audioContext.createScriptProcessor(4096, 1, 1);
+  const processor = audioContext.createScriptProcessor(PROCESSOR_BUFFER_SIZE, 1, 1);
+  let gateOpen = false;
 
   processor.onaudioprocess = (event) => {
     const input = event.inputBuffer.getChannelData(0);
+    const rms = computeRms(input);
+
+    if (rms >= NOISE_GATE_OPEN_RMS) {
+      gateOpen = true;
+    } else if (rms <= NOISE_GATE_CLOSE_RMS) {
+      gateOpen = false;
+    }
+
     const downsampled = downsampleBuffer(input, audioContext.sampleRate, TARGET_SAMPLE_RATE);
+    if (!gateOpen) {
+      downsampled.fill(0);
+    }
+
     const pcm = floatTo16BitPCM(downsampled);
     onAudio(arrayBufferToBase64(pcm));
   };

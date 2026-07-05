@@ -250,17 +250,6 @@ export function Interview() {
 
   function exitInterview() {
     realtimeRef.current?.endInterview();
-    realtimeRef.current?.close();
-    realtimeRef.current = null;
-    stopMediaStream(mediaStreamRef.current);
-    mediaStreamRef.current = null;
-    setMediaStream(null);
-    setChecksPassed(false);
-    setConnectionStatus("idle");
-    setAgentSpeaking(false);
-    setUserSpeaking(false);
-    clearInterviewSession(id!);
-    navigate("/");
   }
 
   function toggleMic() {

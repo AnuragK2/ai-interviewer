@@ -4,9 +4,17 @@ const WASM_CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wa
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
-const YAW_THRESHOLD = 0.28;
-const PITCH_UP_THRESHOLD = 0.4;
-const PITCH_DOWN_THRESHOLD = 0.68;
+const YAW_THRESHOLD = 0.32;
+const PITCH_UP_THRESHOLD = 0.35;
+const PITCH_DOWN_THRESHOLD = 0.72;
+
+/** Minimum face bounding-box size (normalized 0–1). Lower = accept smaller / farther faces. */
+const MIN_FACE_SIZE = 0.07;
+/** Allowed face-center range; wider = less picky about framing. */
+const CENTER_X_MIN = 0.1;
+const CENTER_X_MAX = 0.9;
+const CENTER_Y_MIN = 0.08;
+const CENTER_Y_MAX = 0.92;
 
 export type GazeViolation = "face_not_visible" | "looking_away";
 
@@ -32,9 +40,15 @@ function isFaceWellFramed(landmarks: NormalizedLandmark[]): boolean {
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
 
-  if (width < 0.12 || height < 0.12) return false;
-  if (centerX < 0.22 || centerX > 0.78 || centerY < 0.18 || centerY > 0.82) return false;
-  if (minX < 0.04 || maxX > 0.96 || minY < 0.04 || maxY > 0.96) return false;
+  if (width < MIN_FACE_SIZE || height < MIN_FACE_SIZE) return false;
+  if (
+    centerX < CENTER_X_MIN ||
+    centerX > CENTER_X_MAX ||
+    centerY < CENTER_Y_MIN ||
+    centerY > CENTER_Y_MAX
+  ) {
+    return false;
+  }
 
   return true;
 }
@@ -89,6 +103,9 @@ async function createLandmarker(delegate: "GPU" | "CPU") {
     },
     runningMode: "VIDEO",
     numFaces: 1,
+    minFaceDetectionConfidence: 0.35,
+    minFacePresenceConfidence: 0.35,
+    minTrackingConfidence: 0.35,
   });
 }
 
