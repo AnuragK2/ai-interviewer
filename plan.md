@@ -532,8 +532,8 @@ MVP: email via Resend/SendGrid; in-app via notification table + polling.
 - [x] Extend `packages/api-types` with event schemas
 - [x] Wire interview-service to NATS events + MinIO bootstrap
 - [x] Add `plan.md`, `docs/PHASE0.md`
-- [ ] Run `bun install` + `docker compose up -d` (operator)
-- [ ] Optional: `./scripts/phase0-migrate-interview-service.sh` → `services/interview-service`
+- [x] Run `bun install` + `docker compose up -d` (operator)
+- [x] Optional: `./scripts/phase0-migrate-interview-service.sh` → `services/interview-service`
 
 **Exit criteria:** Interview flow works via gateway (`localhost:8080`) with infra running.
 

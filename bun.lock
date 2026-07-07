@@ -46,6 +46,7 @@
         "dotenv": "^17.4.2",
         "express": "^5.2.1",
         "http-proxy-middleware": "^3.0.5",
+        "jose": "^6.0.11",
         "ws": "^8.18.3",
       },
       "devDependencies": {
@@ -58,6 +59,9 @@
     "packages/api-types": {
       "name": "@ai-interviewer/api-types",
       "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
     },
     "packages/event-bus": {
       "name": "@ai-interviewer/event-bus",
@@ -92,6 +96,32 @@
     "packages/typescript-config": {
       "name": "@repo/typescript-config",
       "version": "0.0.0",
+    },
+    "services/identity-service": {
+      "name": "@ai-interviewer/identity-service",
+      "dependencies": {
+        "@ai-interviewer/api-types": "workspace:*",
+        "@ai-interviewer/event-bus": "workspace:*",
+        "@prisma/adapter-pg": "^7.8.0",
+        "@prisma/client": "^7.8.0",
+        "@types/express": "^5.0.6",
+        "axios": "^1.18.1",
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "express": "^5.2.1",
+        "jose": "^6.0.11",
+        "pg": "^8.22.0",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/cors": "^2.8.19",
+        "@types/pg": "^8.20.0",
+        "prisma": "^7.8.0",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
     },
     "services/interview-service": {
       "name": "@ai-interviewer/interview-service",
@@ -131,6 +161,8 @@
     "@ai-interviewer/event-bus": ["@ai-interviewer/event-bus@workspace:packages/event-bus"],
 
     "@ai-interviewer/gateway": ["@ai-interviewer/gateway@workspace:apps/gateway"],
+
+    "@ai-interviewer/identity-service": ["@ai-interviewer/identity-service@workspace:services/identity-service"],
 
     "@ai-interviewer/interview-service": ["@ai-interviewer/interview-service@workspace:services/interview-service"],
 
@@ -595,6 +627,8 @@
     "isexe": ["isexe@2.0.0", "", {}, "sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw=="],
 
     "jiti": ["jiti@2.7.0", "", { "bin": { "jiti": "lib/jiti-cli.mjs" } }, "sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ=="],
+
+    "jose": ["jose@6.2.3", "", {}, "sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw=="],
 
     "json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 

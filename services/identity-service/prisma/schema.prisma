@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CANDIDATE
+  RECRUITER
+}
+
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+}
+
+model Company {
+  id        String             @id @default(uuid())
+  name      String
+  slug      String             @unique
+  logoUrl   String?
+  createdAt DateTime           @default(now())
+  users     User[]
+  recruiters RecruiterProfile[]
+}
+
+model User {
+  id               String           @id @default(uuid())
+  email            String           @unique
+  passwordHash     String?
+  name             String?
+  avatarUrl        String?
+  role             UserRole
+  companyId        String?
+  company          Company?         @relation(fields: [companyId], references: [id])
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  oauthAccounts    OAuthAccount[]
+  recruiterProfile RecruiterProfile?
+}
+
+model OAuthAccount {
+  id                String        @id @default(uuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          OAuthProvider
+  providerAccountId String
+  createdAt         DateTime      @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+}
+
+model RecruiterProfile {
+  userId     String  @id
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id])
+  title      String?
+  department String?
+}

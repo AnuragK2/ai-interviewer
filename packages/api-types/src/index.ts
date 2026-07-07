@@ -109,3 +109,20 @@ export {
   createPlatformEvent,
   EventSubjects,
 } from "./events";
+export type {
+  AuthResponse,
+  AuthUser,
+  CompanySummary,
+  LoginRequest,
+  OAuthProvider,
+  OAuthProviderKey,
+  OAuthProvidersResponse,
+  RegisterCandidateRequest,
+  RegisterRecruiterRequest,
+  UserRole,
+} from "./auth";
+export {
+  LoginRequestSchema,
+  RegisterCandidateRequestSchema,
+  RegisterRecruiterRequestSchema,
+} from "./auth";
