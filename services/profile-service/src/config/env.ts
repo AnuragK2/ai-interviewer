@@ -1,0 +1,14 @@
+export const env = {
+  port: Number(process.env.PORT) || 3003,
+  serviceName: process.env.SERVICE_NAME ?? "profile-service",
+  databaseUrl: process.env.DATABASE_URL,
+  jwtSecret: process.env.JWT_SECRET ?? "dev-secret-change-me",
+  githubToken: process.env.GITHUB_TOKEN,
+  proxyUrl: process.env.PROXY_URL,
+  minioEndpoint: process.env.MINIO_ENDPOINT ?? "localhost",
+  minioPort: Number(process.env.MINIO_PORT ?? 9000),
+  minioUseSsl: process.env.MINIO_USE_SSL === "true",
+  minioAccessKey: process.env.MINIO_ACCESS_KEY ?? "minio",
+  minioSecretKey: process.env.MINIO_SECRET_KEY ?? "minio123",
+  minioBucket: process.env.MINIO_BUCKET ?? "platform-media",
+} as const;

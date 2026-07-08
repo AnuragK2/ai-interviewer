@@ -1,30 +1,7 @@
+import type { GithubProfileData, ParsedResume } from "./resume";
+
 /** Resume parsing & profile data */
-export type ParsedResume = {
-  rawText: string;
-  name?: string;
-  email?: string;
-  phone?: string;
-  summary?: string;
-  skills: string[];
-  experience: string[];
-  education: string[];
-  projects: string[];
-};
-
-export type GithubRepoSummary = {
-  description: string | null;
-  name: string;
-  fullName: string;
-  starCount: number;
-  language: string | null;
-  url: string;
-};
-
-export type GithubProfileData = {
-  username: string;
-  profileUrl: string;
-  repos: GithubRepoSummary[];
-};
+export type { GithubProfileData, GithubRepoSummary, ParsedResume } from "./resume";
 
 /** REST API contracts */
 export type InterviewSummary = {
@@ -126,3 +103,17 @@ export {
   RegisterCandidateRequestSchema,
   RegisterRecruiterRequestSchema,
 } from "./auth";
+export type {
+  CandidateProfileResponse,
+  EducationEntry,
+  EmploymentType,
+  ExperienceEntry,
+  ProfileLinks,
+  ProfilePreferences,
+  ProfileResumeInfo,
+  ResumeDownloadResponse,
+  SkillEntry,
+  UpdateCandidateProfileRequest,
+  WorkStyle,
+} from "./profile";
+export { UpdateCandidateProfileSchema } from "./profile";

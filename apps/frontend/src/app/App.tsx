@@ -12,6 +12,7 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { OAuthCallbackPage } from "@/features/auth/pages/OAuthCallbackPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { CandidateDashboardPage } from "@/features/candidate/pages/DashboardPage";
+import { ProfilePage } from "@/features/candidate/pages/ProfilePage";
 import { RecruiterDashboardPage } from "@/features/recruiter/pages/DashboardPage";
 
 export function App() {
@@ -27,6 +28,7 @@ export function App() {
 
             <Route element={<ProtectedRoute allowedRoles={["CANDIDATE"]} />}>
               <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
+              <Route path="/candidate/profile" element={<ProfilePage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["RECRUITER"]} />}>

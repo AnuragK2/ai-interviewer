@@ -24,18 +24,19 @@ export function CandidateDashboardPage() {
           <CardHeader>
             <CardTitle>Complete your profile</CardTitle>
             <CardDescription>
-              Phase 2 will add the full profile portal here — skills, experience, resume upload, and links.
+              Add skills, experience, resume, and preferences so recruiters can match you to roles.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>Signed in as {user?.email}</p>
+            <Button asChild>
+              <Link to="/candidate/profile">Go to profile</Link>
+            </Button>
             <p>
-              Browse jobs and track applications from this dashboard once Phase 2–4 are live. For now, you can
-              still use the{" "}
+              Legacy AI interview flow:{" "}
               <Link to="/legacy" className="text-teal-400 underline-offset-4 hover:underline">
-                legacy AI interview flow
+                start here
               </Link>
-              .
             </p>
           </CardContent>
         </Card>

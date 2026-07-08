@@ -42,6 +42,10 @@ function createServiceProxy(target: string, label: string) {
   });
 }
 
+export function createProfileProxy() {
+  return createServiceProxy(env.profileServiceUrl, "profile-service");
+}
+
 export function createInterviewProxy() {
   return createServiceProxy(env.interviewServiceUrl, "interview-service");
 }
@@ -53,6 +57,7 @@ export function createIdentityProxy() {
 export function createGatewayApp() {
   const app = express();
   const identityProxy = createIdentityProxy();
+  const profileProxy = createProfileProxy();
   const interviewProxy = createInterviewProxy();
 
   app.use(cors());
@@ -70,6 +75,11 @@ export function createGatewayApp() {
       return;
     }
 
+    if (path.startsWith("/api/v1/profiles")) {
+      profileProxy(req, res, next);
+      return;
+    }
+
     if (path.startsWith("/api")) {
       interviewProxy(req, res, next);
       return;
@@ -82,5 +92,5 @@ export function createGatewayApp() {
     res.status(404).json({ error: "Not found." });
   });
 
-  return { app, identityProxy, interviewProxy };
+  return { app, identityProxy, profileProxy, interviewProxy };
 }

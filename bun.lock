@@ -154,6 +154,35 @@
         "typescript": "^5",
       },
     },
+    "services/profile-service": {
+      "name": "@ai-interviewer/profile-service",
+      "dependencies": {
+        "@ai-interviewer/api-types": "workspace:*",
+        "@ai-interviewer/object-storage": "workspace:*",
+        "@ai-interviewer/resume-parser": "workspace:*",
+        "@prisma/adapter-pg": "^7.8.0",
+        "@prisma/client": "^7.8.0",
+        "@types/express": "^5.0.6",
+        "axios": "^1.18.1",
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "express": "^5.2.1",
+        "jose": "^6.0.11",
+        "multer": "^2.1.1",
+        "pg": "^8.22.0",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/cors": "^2.8.19",
+        "@types/multer": "^2.0.0",
+        "@types/pg": "^8.20.0",
+        "prisma": "^7.8.0",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
   },
   "packages": {
     "@ai-interviewer/api-types": ["@ai-interviewer/api-types@workspace:packages/api-types"],
@@ -167,6 +196,8 @@
     "@ai-interviewer/interview-service": ["@ai-interviewer/interview-service@workspace:services/interview-service"],
 
     "@ai-interviewer/object-storage": ["@ai-interviewer/object-storage@workspace:packages/object-storage"],
+
+    "@ai-interviewer/profile-service": ["@ai-interviewer/profile-service@workspace:services/profile-service"],
 
     "@ai-interviewer/resume-parser": ["@ai-interviewer/resume-parser@workspace:packages/resume-parser"],
 

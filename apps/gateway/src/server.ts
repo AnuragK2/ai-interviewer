@@ -16,6 +16,7 @@ export function startGateway() {
   server.listen(env.port, () => {
     console.log(`[gateway] API gateway running on port ${env.port}`);
     console.log(`[gateway] Proxying /api/v1/auth/*, /api/v1/companies/* → ${env.identityServiceUrl}`);
+    console.log(`[gateway] Proxying /api/v1/profiles/* → ${env.profileServiceUrl}`);
     console.log(`[gateway] Proxying other /api/* → ${env.interviewServiceUrl}`);
     console.log(`[gateway] WebSocket /api/v1/interview/ws → interview-service (message relay)`);
   });

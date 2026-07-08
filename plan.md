@@ -545,10 +545,10 @@ MVP: email via Resend/SendGrid; in-app via notification table + polling.
 
 **Goal:** Login, companies, roles.
 
-- [ ] `identity-service`: User, Company, Recruiter, JWT auth
-- [ ] Register: candidate vs recruiter (recruiter joins/creates company)
-- [ ] Gateway: auth middleware, tenant context
-- [ ] Frontend: login/register, role-based redirect
+- [x] `identity-service`: User, Company, Recruiter, JWT auth
+- [x] Register: candidate vs recruiter (recruiter joins/creates company)
+- [x] Gateway: auth middleware, tenant context
+- [x] Frontend: login/register, role-based redirect
 
 **Exit criteria:** Recruiter sees empty dashboard scoped to company. Candidate sees empty profile prompt.
 
@@ -558,11 +558,11 @@ MVP: email via Resend/SendGrid; in-app via notification table + polling.
 
 **Goal:** Full profile portal.
 
-- [ ] `profile-service`: schema + CRUD for all R1 fields
-- [ ] Resume upload, parse, merge with manual fields
-- [ ] GitHub link enrichment (existing logic)
-- [ ] Profile completeness score
-- [ ] Frontend: `/candidate/profile`
+- [x] `profile-service`: schema + CRUD for all R1 fields
+- [x] Resume upload, parse, merge with manual fields
+- [x] GitHub link enrichment (existing logic)
+- [x] Profile completeness score
+- [x] Frontend: `/candidate/profile`
 
 **Exit criteria:** Candidate saves profile; resume downloadable; parsed text visible.
 

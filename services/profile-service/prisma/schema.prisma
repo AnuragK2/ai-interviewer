@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model CandidateProfile {
+  userId              String   @id
+  name                String?
+  phone               String?
+  photoUrl            String?
+  skills              Json     @default("[]")
+  experience          Json     @default("[]")
+  education           Json     @default("[]")
+  preferences         Json     @default("{}")
+  links               Json     @default("{}")
+  resumeObjectKey     String?
+  resumeFileName      String?
+  resumeMimeType      String?
+  resumeText          String?
+  parsedResume        Json     @default("{}")
+  githubMeta          Json     @default("{}")
+  profileCompleteness Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
