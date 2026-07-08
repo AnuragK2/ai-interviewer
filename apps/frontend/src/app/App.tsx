@@ -12,8 +12,12 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { OAuthCallbackPage } from "@/features/auth/pages/OAuthCallbackPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { CandidateDashboardPage } from "@/features/candidate/pages/DashboardPage";
+import { CandidateJobDetailPage } from "@/features/candidate/pages/JobDetailPage";
+import { CandidateJobsListPage } from "@/features/candidate/pages/JobsListPage";
 import { ProfilePage } from "@/features/candidate/pages/ProfilePage";
 import { RecruiterDashboardPage } from "@/features/recruiter/pages/DashboardPage";
+import { RecruiterJobEditPage } from "@/features/recruiter/pages/JobEditPage";
+import { RecruiterJobsListPage } from "@/features/recruiter/pages/JobsListPage";
 
 export function App() {
   return (
@@ -29,10 +33,15 @@ export function App() {
             <Route element={<ProtectedRoute allowedRoles={["CANDIDATE"]} />}>
               <Route path="/candidate/dashboard" element={<CandidateDashboardPage />} />
               <Route path="/candidate/profile" element={<ProfilePage />} />
+              <Route path="/candidate/jobs" element={<CandidateJobsListPage />} />
+              <Route path="/candidate/jobs/:id" element={<CandidateJobDetailPage />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["RECRUITER"]} />}>
               <Route path="/recruiter/dashboard" element={<RecruiterDashboardPage />} />
+              <Route path="/recruiter/jobs" element={<RecruiterJobsListPage />} />
+              <Route path="/recruiter/jobs/new" element={<RecruiterJobEditPage />} />
+              <Route path="/recruiter/jobs/:id" element={<RecruiterJobEditPage />} />
             </Route>
 
             <Route path="/legacy" element={<Form />} />

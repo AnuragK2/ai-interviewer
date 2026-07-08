@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum JobStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum WorkStyle {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  INTERNSHIP
+}
+
+model Job {
+  id              String          @id @default(uuid())
+  companyId        String
+  title           String
+  description     String
+  requiredSkills  String[]        @default([])
+  preferredSkills String[]        @default([])
+  location        String?
+  salaryMin       Int?
+  salaryMax       Int?
+  currency        String          @default("USD")
+  workStyle       WorkStyle?
+  employmentTypes EmploymentType[] @default([])
+  status          JobStatus       @default(DRAFT)
+  expiresAt       DateTime?
+  createdBy       String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([expiresAt])
+}

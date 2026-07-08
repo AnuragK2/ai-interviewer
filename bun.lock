@@ -154,6 +154,30 @@
         "typescript": "^5",
       },
     },
+    "services/job-service": {
+      "name": "@ai-interviewer/job-service",
+      "dependencies": {
+        "@ai-interviewer/api-types": "workspace:*",
+        "@prisma/adapter-pg": "^7.8.0",
+        "@prisma/client": "^7.8.0",
+        "@types/express": "^5.0.6",
+        "cors": "^2.8.6",
+        "dotenv": "^17.4.2",
+        "express": "^5.2.1",
+        "jose": "^6.0.11",
+        "pg": "^8.22.0",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/cors": "^2.8.19",
+        "@types/pg": "^8.20.0",
+        "prisma": "^7.8.0",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
+      },
+    },
     "services/profile-service": {
       "name": "@ai-interviewer/profile-service",
       "dependencies": {
@@ -194,6 +218,8 @@
     "@ai-interviewer/identity-service": ["@ai-interviewer/identity-service@workspace:services/identity-service"],
 
     "@ai-interviewer/interview-service": ["@ai-interviewer/interview-service@workspace:services/interview-service"],
+
+    "@ai-interviewer/job-service": ["@ai-interviewer/job-service@workspace:services/job-service"],
 
     "@ai-interviewer/object-storage": ["@ai-interviewer/object-storage@workspace:packages/object-storage"],
 

@@ -163,6 +163,8 @@ async function findOrCreateUserFromOAuth(
   profile: OAuthProfile,
   role: UserRole,
 ): Promise<{ userId: string; isNewUser: boolean }> {
+  const email = profile.email.toLowerCase();
+
   const linkedAccount = await prisma.oAuthAccount.findUnique({
     where: {
       provider_providerAccountId: {
@@ -185,13 +187,53 @@ async function findOrCreateUserFromOAuth(
       });
     }
 
+    if (linkedAccount.user.role !== role) {
+      throw new AuthError(
+        `This email is already registered as a ${linkedAccount.user.role.toLowerCase()}. Please use the correct role to sign in.`,
+        409,
+      );
+    }
+
+    if (role === "RECRUITER" && !linkedAccount.user.companyId) {
+      const baseSlug = slugifyCompanyName(email.split("@")[1] ? `Company ${email.split("@")[1]}` : "My Company");
+      const slug = await ensureUniqueCompanySlug(baseSlug, async (candidate) => {
+        const existing = await prisma.company.findUnique({ where: { slug: candidate } });
+        return Boolean(existing);
+      });
+
+      const companyName = email.split("@")[1] ? `Company ${email.split("@")[1]}` : "My Company";
+
+      await prisma.$transaction(async (tx: PrismaTransactionClient) => {
+        const company = await tx.company.create({
+          data: { name: companyName, slug },
+        });
+
+        await tx.user.update({
+          where: { id: linkedAccount.userId },
+          data: { companyId: company.id },
+        });
+
+        await tx.recruiterProfile.upsert({
+          where: { userId: linkedAccount.userId },
+          create: { userId: linkedAccount.userId, companyId: company.id, title: null },
+          update: { companyId: company.id },
+        });
+      });
+    }
+
     return { userId: linkedAccount.userId, isNewUser: false };
   }
 
-  const email = profile.email.toLowerCase();
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
   if (existingUser) {
+    if (existingUser.role !== role) {
+      throw new AuthError(
+        `This email is already registered as a ${existingUser.role.toLowerCase()}. Please use the correct role to sign in.`,
+        409,
+      );
+    }
+
     await prisma.oAuthAccount.create({
       data: {
         userId: existingUser.id,
@@ -200,22 +242,90 @@ async function findOrCreateUserFromOAuth(
       },
     });
 
+    if (role === "RECRUITER" && !existingUser.companyId) {
+      const baseSlug = slugifyCompanyName(email.split("@")[1] ? `Company ${email.split("@")[1]}` : "My Company");
+      const slug = await ensureUniqueCompanySlug(baseSlug, async (candidate) => {
+        const existing = await prisma.company.findUnique({ where: { slug: candidate } });
+        return Boolean(existing);
+      });
+
+      const companyName = email.split("@")[1] ? `Company ${email.split("@")[1]}` : "My Company";
+
+      await prisma.$transaction(async (tx: PrismaTransactionClient) => {
+        const company = await tx.company.create({
+          data: { name: companyName, slug },
+        });
+
+        await tx.user.update({
+          where: { id: existingUser.id },
+          data: { companyId: company.id },
+        });
+
+        await tx.recruiterProfile.upsert({
+          where: { userId: existingUser.id },
+          create: { userId: existingUser.id, companyId: company.id, title: null },
+          update: { companyId: company.id },
+        });
+      });
+    }
+
     return { userId: existingUser.id, isNewUser: false };
   }
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      name: profile.name,
-      avatarUrl: profile.avatarUrl,
-      role,
-      oauthAccounts: {
-        create: {
-          provider,
-          providerAccountId: profile.providerAccountId,
+  const user = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
+    if (role !== "RECRUITER") {
+      return tx.user.create({
+        data: {
+          email,
+          name: profile.name,
+          avatarUrl: profile.avatarUrl,
+          role,
+          oauthAccounts: {
+            create: {
+              provider,
+              providerAccountId: profile.providerAccountId,
+            },
+          },
+        },
+      });
+    }
+
+    const baseSlug = slugifyCompanyName(email.split("@")[1] ? `Company ${email.split("@")[1]}` : "My Company");
+    const slug = await ensureUniqueCompanySlug(baseSlug, async (candidate) => {
+      const existing = await tx.company.findUnique({ where: { slug: candidate } });
+      return Boolean(existing);
+    });
+
+    const companyName = email.split("@")[1] ? `Company ${email.split("@")[1]}` : "My Company";
+    const company = await tx.company.create({
+      data: { name: companyName, slug },
+    });
+
+    const createdUser = await tx.user.create({
+      data: {
+        email,
+        name: profile.name,
+        avatarUrl: profile.avatarUrl,
+        role: "RECRUITER",
+        companyId: company.id,
+        oauthAccounts: {
+          create: {
+            provider,
+            providerAccountId: profile.providerAccountId,
+          },
         },
       },
-    },
+    });
+
+    await tx.recruiterProfile.create({
+      data: {
+        userId: createdUser.id,
+        companyId: company.id,
+        title: null,
+      },
+    });
+
+    return createdUser;
   });
 
   return { userId: user.id, isNewUser: true };

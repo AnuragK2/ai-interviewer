@@ -32,6 +32,9 @@ export function CandidateDashboardPage() {
             <Button asChild>
               <Link to="/candidate/profile">Go to profile</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link to="/candidate/jobs">Browse jobs</Link>
+            </Button>
             <p>
               Legacy AI interview flow:{" "}
               <Link to="/legacy" className="text-teal-400 underline-offset-4 hover:underline">

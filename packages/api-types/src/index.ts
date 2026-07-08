@@ -104,6 +104,16 @@ export {
   RegisterRecruiterRequestSchema,
 } from "./auth";
 export type {
+  CreateJobRequest,
+  EmploymentType as JobEmploymentType,
+  JobResponse,
+  JobStatus,
+  ListJobsResponse,
+  UpdateJobRequest,
+  WorkStyle as JobWorkStyle,
+} from "./job";
+export { CreateJobRequestSchema, UpdateJobRequestSchema } from "./job";
+export type {
   CandidateProfileResponse,
   EducationEntry,
   EmploymentType,
