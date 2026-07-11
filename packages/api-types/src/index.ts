@@ -117,12 +117,15 @@ export type {
   InterviewAccessResponse,
   RecruiterApplicationListResponse,
   RecruiterApplicationPacketResponse,
+  RecruiterApplicationAction,
+  RecruiterApplicationDecisionRequest,
 } from "./application";
-export { ApplyToJobRequestSchema, canStartInterview } from "./application";
+export { ApplyToJobRequestSchema, canStartInterview, RecruiterApplicationDecisionSchema } from "./application";
 export type {
   CandidateDashboardApplicationSummary,
   CandidateDashboardResponse,
   ApplicationStatusCount,
+  RecruiterDashboardApplicationSummary,
   RecruiterDashboardResponse,
   RecruiterExpiringJobAlert,
   RecruiterPipelineStage,

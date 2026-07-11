@@ -1,6 +1,6 @@
 import type { EmploymentType, GenerateJobDescriptionResponse, JobStatus, JobWorkStyle } from "@ai-interviewer/api-types";
 import { Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
@@ -81,6 +90,14 @@ function buildPayload(form: FormState) {
   };
 }
 
+function formSnapshot(form: FormState) {
+  const payload = buildPayload(form);
+  return JSON.stringify({
+    ...payload,
+    employmentTypes: [...payload.employmentTypes].sort(),
+  });
+}
+
 export function RecruiterJobEditPage() {
   const { user } = useAuth();
   const { id } = useParams();
@@ -88,8 +105,10 @@ export function RecruiterJobEditPage() {
   const isNew = id === "new" || !id;
 
   const [form, setForm] = useState<FormState>(defaultForm);
+  const [initialForm, setInitialForm] = useState<FormState | null>(isNew ? defaultForm : null);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [generatorOpen, setGeneratorOpen] = useState(false);
 
   useEffect(() => {
@@ -98,7 +117,7 @@ export function RecruiterJobEditPage() {
     void jobApi
       .getJob(id)
       .then((job) => {
-        setForm({
+        const loadedForm: FormState = {
           title: job.title,
           description: job.description,
           requiredSkills: job.requiredSkills.join(", "),
@@ -111,19 +130,32 @@ export function RecruiterJobEditPage() {
           employmentTypes: job.employmentTypes,
           status: job.status,
           expiresAt: job.expiresAt ? job.expiresAt.slice(0, 10) : "",
-        });
+        };
+        setForm(loadedForm);
+        setInitialForm(loadedForm);
       })
       .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load job."))
       .finally(() => setLoading(false));
   }, [id, isNew]);
 
+  const hasChanges = useMemo(() => {
+    if (isNew || !initialForm) return true;
+    return formSnapshot(form) !== formSnapshot(initialForm);
+  }, [form, initialForm, isNew]);
+
   async function handleSave() {
     setSaving(true);
     try {
       const payload = buildPayload(form);
-      const saved = isNew ? await jobApi.createJob(payload) : await jobApi.updateJob(id!, payload);
-      toast.success(isNew ? "Job created." : "Job updated.");
-      navigate(`/recruiter/jobs/${saved.id}`);
+      if (isNew) {
+        await jobApi.createJob(payload);
+        toast.success("Job created successfully.");
+      } else {
+        await jobApi.updateJob(id!, payload);
+        toast.success("Job updated successfully.");
+      }
+      setConfirmOpen(false);
+      navigate("/recruiter/jobs");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Save failed.");
     } finally {
@@ -304,10 +336,12 @@ export function RecruiterJobEditPage() {
                   </div>
                 </div>
                 <div className="flex justify-end pt-2">
-                  <Button onClick={() => void handleSave()} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500">
-                    <ButtonLoading loading={saving} loadingText="Saving…">
-                      {isNew ? "Create job" : "Save changes"}
-                    </ButtonLoading>
+                  <Button
+                    onClick={() => setConfirmOpen(true)}
+                    disabled={saving || !hasChanges}
+                    className="bg-indigo-600 hover:bg-indigo-500"
+                  >
+                    {isNew ? "Create job" : "Save changes"}
                   </Button>
                 </div>
               </>
@@ -329,6 +363,38 @@ export function RecruiterJobEditPage() {
         }}
         onApply={applyGeneratedDescription}
       />
+
+      <Modal open={confirmOpen} onOpenChange={(open) => !saving && setConfirmOpen(open)}>
+        <ModalContent aria-describedby="save-job-description">
+          <ModalHeader>
+            <ModalTitle>{isNew ? "Create job?" : "Save changes?"}</ModalTitle>
+            <ModalDescription id="save-job-description">
+              {isNew
+                ? "This will create the job and return you to your job listings."
+                : "Your updates will be saved and you'll return to your job listings."}
+            </ModalDescription>
+          </ModalHeader>
+
+          <ModalBody className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">{form.title.trim() || "Untitled role"}</p>
+            <p className="mt-1 capitalize">
+              Status: {form.status.toLowerCase().replace("_", " ")}
+              {form.location.trim() ? ` · ${form.location.trim()}` : ""}
+            </p>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={() => void handleSave()} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500">
+              <ButtonLoading loading={saving} loadingText="Saving…">
+                {isNew ? "Create job" : "Save changes"}
+              </ButtonLoading>
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </PageContainer>
   );
 }

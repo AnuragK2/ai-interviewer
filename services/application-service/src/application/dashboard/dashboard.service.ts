@@ -25,6 +25,18 @@ function extractJobTitle(jobSnapshot: unknown): string | null {
   return typeof title === "string" && title.trim() ? title.trim() : null;
 }
 
+function extractCandidateName(candidateSnapshot: unknown): string | null {
+  if (!candidateSnapshot || typeof candidateSnapshot !== "object") return null;
+
+  const snapshot = candidateSnapshot as { name?: unknown; parsedResume?: { name?: unknown } };
+  if (typeof snapshot.name === "string" && snapshot.name.trim()) return snapshot.name.trim();
+  if (typeof snapshot.parsedResume?.name === "string" && snapshot.parsedResume.name.trim()) {
+    return snapshot.parsedResume.name.trim();
+  }
+
+  return null;
+}
+
 const PIPELINE_LABELS: Record<string, string> = {
   SUBMITTED: "Submitted",
   ANALYZING: "Analyzing",
@@ -34,6 +46,7 @@ const PIPELINE_LABELS: Record<string, string> = {
   INTERVIEW_IN_PROGRESS: "Interview in progress",
   INTERVIEW_COMPLETED: "Interview completed",
   INTERVIEW_CANCELLED: "Interview cancelled",
+  SELECTED: "Selected",
 };
 
 const PIPELINE_ORDER: ApplicationStatus[] = [
@@ -45,6 +58,7 @@ const PIPELINE_ORDER: ApplicationStatus[] = [
   "INTERVIEW_IN_PROGRESS",
   "INTERVIEW_COMPLETED",
   "INTERVIEW_CANCELLED",
+  "SELECTED",
 ];
 
 function daysUntil(isoDate: string) {
@@ -147,6 +161,22 @@ export async function getRecruiterDashboard(
     count: funnelCounts.get(status) ?? 0,
   }));
 
+  const applicationsByStatus = PIPELINE_ORDER.filter((status) => (funnelCounts.get(status) ?? 0) > 0).map((status) => ({
+    status,
+    count: funnelCounts.get(status) ?? 0,
+  }));
+
+  const recentApplications = apps.slice(0, 6).map((app) => ({
+    id: app.id,
+    jobId: app.jobId,
+    jobTitle: extractJobTitle(app.jobSnapshot),
+    candidateName: extractCandidateName(app.candidateSnapshot),
+    status: app.status as ApplicationStatus,
+    fitScore: app.fitScore,
+    createdAt: app.createdAt.toISOString(),
+    updatedAt: app.updatedAt.toISOString(),
+  }));
+
   const jobsResponse = await fetchJson<ListJobsResponse>(`${env.gatewayUrl}/api/v1/jobs/_recruiter/mine`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -168,6 +198,8 @@ export async function getRecruiterDashboard(
     newApplicantsLast7Days,
     awaitingReviewCount,
     awaitingInterviewFeedbackCount,
+    applicationsByStatus,
+    recentApplications,
     pipelineFunnel,
     expiringJobs,
   };

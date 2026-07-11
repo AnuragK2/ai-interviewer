@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { profileRouter } from "./routes/profile.routes";
+import { internalRouter } from "./routes/internal.routes";
 
 export function createHttpApp() {
   const app = express();
@@ -13,6 +14,7 @@ export function createHttpApp() {
   });
 
   app.use("/api/v1/profiles", profileRouter);
+  app.use("/api/v1/internal", internalRouter);
 
   return app;
 }

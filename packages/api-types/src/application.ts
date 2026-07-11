@@ -8,7 +8,8 @@ export type ApplicationStatus =
   | "INTERVIEW_PENDING"
   | "INTERVIEW_IN_PROGRESS"
   | "INTERVIEW_COMPLETED"
-  | "INTERVIEW_CANCELLED";
+  | "INTERVIEW_CANCELLED"
+  | "SELECTED";
 
 export type ApplicationResponse = {
   id: string;
@@ -66,6 +67,16 @@ export type RecruiterApplicationPacketResponse = {
   jobSnapshot: unknown;
   candidateSnapshot: unknown;
 };
+
+export type RecruiterApplicationAction = "mark_reviewed" | "mark_pending" | "reject" | "select";
+
+export type RecruiterApplicationDecisionRequest = {
+  action: RecruiterApplicationAction;
+};
+
+export const RecruiterApplicationDecisionSchema = z.object({
+  action: z.enum(["mark_reviewed", "mark_pending", "reject", "select"]),
+});
 
 export const ApplyToJobRequestSchema = z.object({
   jobId: z.string().uuid(),

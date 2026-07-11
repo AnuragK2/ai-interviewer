@@ -1,4 +1,4 @@
-import { ApplyToJobRequestSchema } from "@ai-interviewer/api-types";
+import { ApplyToJobRequestSchema, RecruiterApplicationDecisionSchema } from "@ai-interviewer/api-types";
 import { Router } from "express";
 import {
   applyToJob,
@@ -6,10 +6,12 @@ import {
   getCandidateApplication,
   getInterviewAccess,
   getRecruiterApplicationPacket,
+  getRecruiterApplicationResumeDownload,
   inviteToInterview,
   listCandidateApplications,
   listRecruiterApplicationsForJob,
   markInterviewPending,
+  updateRecruiterApplicationDecision,
 } from "../../../application/applications/application.service";
 import { listTenantAuditLogs } from "../../../application/audit/audit.service";
 import {
@@ -181,6 +183,45 @@ applicationsRouter.post("/_recruiter/:id/invite", requireRecruiterAuth, async (r
       actorEmail: req.auth!.email,
     });
     res.status(201).json({ application });
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.patch("/_recruiter/:id/decision", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const applicationId = getRouteParam(req.params.id);
+    if (!applicationId) {
+      res.status(400).json({ error: "Invalid application id." });
+      return;
+    }
+
+    const body = RecruiterApplicationDecisionSchema.parse(req.body);
+    const application = await updateRecruiterApplicationDecision(applicationId, body.action, {
+      companyId: req.auth!.companyId!,
+      actorUserId: req.auth!.sub,
+      actorEmail: req.auth!.email,
+    });
+    res.json({ application });
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.get("/_recruiter/:id/resume/download", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const applicationId = getRouteParam(req.params.id);
+    if (!applicationId) {
+      res.status(400).json({ error: "Invalid application id." });
+      return;
+    }
+
+    const download = await getRecruiterApplicationResumeDownload(applicationId, {
+      companyId: req.auth!.companyId!,
+      actorUserId: req.auth!.sub,
+      actorEmail: req.auth!.email,
+    });
+    res.json(download);
   } catch (error) {
     handleApplicationsRouteError(res, error);
   }

@@ -6,9 +6,11 @@ import type {
   CandidateApplicationListResponse,
   CandidateDashboardResponse,
   InterviewAccessResponse,
+  RecruiterApplicationAction,
   RecruiterApplicationListResponse,
   RecruiterApplicationPacketResponse,
   RecruiterDashboardResponse,
+  ResumeDownloadResponse,
 } from "@ai-interviewer/api-types";
 import { BACKEND_URL } from "@/shared/api/config";
 import { getAccessToken } from "@/shared/lib/auth-storage";
@@ -83,6 +85,24 @@ export async function inviteToInterview(applicationId: string): Promise<Applicat
     { method: "POST" },
   );
   return data.application;
+}
+
+export async function updateRecruiterApplicationDecision(
+  applicationId: string,
+  action: RecruiterApplicationAction,
+): Promise<ApplicationResponse> {
+  const data = await applicationFetch<{ application: ApplicationResponse }>(
+    `/api/v1/applications/_recruiter/${applicationId}/decision`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ action }),
+    },
+  );
+  return data.application;
+}
+
+export async function downloadRecruiterApplicationResume(applicationId: string): Promise<ResumeDownloadResponse> {
+  return applicationFetch<ResumeDownloadResponse>(`/api/v1/applications/_recruiter/${applicationId}/resume/download`);
 }
 
 export async function listApplicantsForJob(jobId: string): Promise<ApplicationResponse[]> {

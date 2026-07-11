@@ -16,6 +16,7 @@ enum ApplicationStatus {
   INTERVIEW_IN_PROGRESS
   INTERVIEW_COMPLETED
   INTERVIEW_CANCELLED
+  SELECTED
 }
 
 model Application {

@@ -9,6 +9,7 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   INTERVIEW_IN_PROGRESS: "Interview in progress",
   INTERVIEW_COMPLETED: "Interview complete",
   INTERVIEW_CANCELLED: "Closed",
+  SELECTED: "Selected",
 };
 
 export const APPLICATION_PIPELINE_LABELS: Record<ApplicationStatus, string> = {
@@ -20,6 +21,7 @@ export const APPLICATION_PIPELINE_LABELS: Record<ApplicationStatus, string> = {
   INTERVIEW_IN_PROGRESS: "Interviewing",
   INTERVIEW_COMPLETED: "Complete",
   INTERVIEW_CANCELLED: "Closed",
+  SELECTED: "Selected",
 };
 
 export function getApplicationStatusLabel(status: ApplicationStatus) {
@@ -36,6 +38,7 @@ export function getApplicationStatusBadgeClasses(status: ApplicationStatus) {
       return "border-slate-500/30 bg-slate-500/10 text-slate-200";
     case "ANALYZED":
     case "INTERVIEW_COMPLETED":
+    case "SELECTED":
       return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
     case "ANALYZING":
       return "border-indigo-500/30 bg-indigo-500/10 text-indigo-200";

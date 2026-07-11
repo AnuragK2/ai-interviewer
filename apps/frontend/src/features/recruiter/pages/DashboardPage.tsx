@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
-import type { RecruiterDashboardResponse, TenantAuditLogResponse } from "@ai-interviewer/api-types";
+import type { RecruiterDashboardResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ApplicationStatusBadge } from "@/features/applications/components/ApplicationStatusBadge";
+import { ApplicationStatusPieChart } from "@/features/applications/components/ApplicationStatusPieChart";
+import { MatchScoreBadge } from "@/features/jobs/components/MatchScoreBadge";
 import * as applicationApi from "@/features/applications/services/application-api";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -24,15 +27,12 @@ function StatCard({ label, value, hint }: { label: string; value: string | numbe
 export function RecruiterDashboardPage() {
   const { user } = useAuth();
   const [dashboard, setDashboard] = useState<RecruiterDashboardResponse | null>(null);
-  const [auditLogs, setAuditLogs] = useState<TenantAuditLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void Promise.all([applicationApi.getRecruiterDashboard(), applicationApi.listRecruiterAuditLogs(8)])
-      .then(([dashboardData, auditData]) => {
-        setDashboard(dashboardData);
-        setAuditLogs(auditData.logs);
-      })
+    void applicationApi
+      .getRecruiterDashboard()
+      .then(setDashboard)
       .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load dashboard."))
       .finally(() => setLoading(false));
   }, []);
@@ -127,27 +127,50 @@ export function RecruiterDashboardPage() {
             </GlowingCard>
           </div>
 
-          <GlowingCard>
-            <CardHeader>
-              <CardTitle>Recent recruiter actions</CardTitle>
-              <CardDescription>Tenant-scoped audit trail for sensitive operations.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {auditLogs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No audit events yet.</p>
-              ) : (
-                auditLogs.map((log) => (
-                  <div key={log.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-sm font-medium">{log.action}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {log.resourceType}
-                      {log.resourceId ? ` · ${log.resourceId.slice(0, 8)}` : ""} · {log.createdAt.slice(0, 16)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </GlowingCard>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <GlowingCard>
+              <CardHeader>
+                <CardTitle>Applications by status</CardTitle>
+                <CardDescription>Distribution of candidates across your hiring pipeline.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ApplicationStatusPieChart data={dashboard.applicationsByStatus} />
+              </CardContent>
+            </GlowingCard>
+
+            <GlowingCard>
+              <CardHeader>
+                <CardTitle>Recent applications</CardTitle>
+                <CardDescription>Latest candidates who applied to your open roles.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {dashboard.recentApplications.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No applications yet.</p>
+                ) : (
+                  dashboard.recentApplications.map((application) => (
+                    <div
+                      key={application.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-4"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">{application.candidateName ?? "Unknown candidate"}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {application.jobTitle ?? "Role"} · Applied {application.createdAt.slice(0, 10)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <ApplicationStatusBadge status={application.status} />
+                        {application.fitScore != null ? <MatchScoreBadge score={application.fitScore} /> : null}
+                        <Button asChild size="sm" variant="outline" className="border-white/10 bg-white/5">
+                          <Link to={`/recruiter/applications/${application.id}`}>View</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </GlowingCard>
+          </div>
         </div>
       )}
     </PageContainer>

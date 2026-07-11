@@ -11,4 +11,5 @@ export const env = {
   minioAccessKey: process.env.MINIO_ACCESS_KEY ?? "minio",
   minioSecretKey: process.env.MINIO_SECRET_KEY ?? "minio123",
   minioBucket: process.env.MINIO_BUCKET ?? "platform-media",
+  internalServiceKey: process.env.INTERNAL_SERVICE_KEY ?? "dev-internal-service-key",
 } as const;

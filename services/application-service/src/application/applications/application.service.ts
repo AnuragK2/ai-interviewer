@@ -5,6 +5,7 @@ import type {
   CandidateApplicationListResponse,
   CreateInterviewFromApplicationResponse,
   InterviewAccessResponse,
+  RecruiterApplicationAction,
   RecruiterApplicationListResponse,
 } from "@ai-interviewer/api-types";
 import { canStartInterview, createApplicationInvitedEvent, createPlatformEvent, EventSubjects } from "@ai-interviewer/api-types";
@@ -375,6 +376,117 @@ export async function markInterviewPending(applicationId: string, candidateUserI
   });
 
   return toApplicationResponse(updated, updated.candidateSnapshot);
+}
+
+export async function updateRecruiterApplicationDecision(
+  applicationId: string,
+  action: RecruiterApplicationAction,
+  ctx: { companyId: string; actorUserId: string; actorEmail?: string },
+): Promise<ApplicationResponse> {
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app || app.companyId !== ctx.companyId) {
+    throw new ApplicationError("Application not found.", 404);
+  }
+
+  let nextStatus = app.status;
+
+  switch (action) {
+    case "reject":
+      if (app.status === "INTERVIEW_IN_PROGRESS") {
+        throw new ApplicationError("Cannot reject a candidate while their interview is in progress.", 400);
+      }
+      if (app.status === "INTERVIEW_CANCELLED") {
+        return toApplicationResponse(app, app.candidateSnapshot);
+      }
+      nextStatus = "INTERVIEW_CANCELLED";
+      break;
+    case "mark_reviewed":
+      if (app.status === "SUBMITTED" || app.status === "ANALYZING") {
+        if (app.fitScore === null) {
+          throw new ApplicationError("Fit analysis is not ready yet.", 400);
+        }
+        nextStatus = "ANALYZED";
+      } else if (app.status === "ANALYZED") {
+        return toApplicationResponse(app, app.candidateSnapshot);
+      } else {
+        throw new ApplicationError("This application has already moved past review.", 400);
+      }
+      break;
+    case "mark_pending":
+      if (app.status === "INTERVIEW_CANCELLED" || app.status === "SELECTED") {
+        throw new ApplicationError("This application cannot be marked as pending.", 400);
+      }
+      if (app.status === "INTERVIEW_IN_PROGRESS" || app.status === "INTERVIEW_COMPLETED") {
+        throw new ApplicationError("Interview-stage applications cannot be marked as pending.", 400);
+      }
+      if (app.status === "INTERVIEW_INVITED" || app.status === "INTERVIEW_PENDING") {
+        throw new ApplicationError("Withdraw the interview invite before marking as pending.", 400);
+      }
+      if (app.status === "ANALYZED") {
+        return toApplicationResponse(app, app.candidateSnapshot);
+      }
+      nextStatus = "ANALYZING";
+      break;
+    case "select":
+      if (app.status !== "INTERVIEW_COMPLETED") {
+        throw new ApplicationError("Select candidate only after the interview is completed.", 400);
+      }
+      nextStatus = "SELECTED";
+      break;
+    default:
+      throw new ApplicationError("Unsupported recruiter action.", 400);
+  }
+
+  const updated =
+    nextStatus === app.status
+      ? app
+      : await prisma.application.update({
+          where: { id: applicationId },
+          data: { status: nextStatus },
+        });
+
+  void recordTenantAudit({
+    companyId: ctx.companyId,
+    actorUserId: ctx.actorUserId,
+    actorEmail: ctx.actorEmail ?? null,
+    action: `application.${action}`,
+    resourceType: "application",
+    resourceId: updated.id,
+    metadata: { previousStatus: app.status, nextStatus: updated.status, jobId: updated.jobId },
+  }).catch((error) => console.error("[audit] decision failed:", error));
+
+  return toApplicationResponse(updated, updated.candidateSnapshot);
+}
+
+export async function getRecruiterApplicationResumeDownload(
+  applicationId: string,
+  ctx: { companyId: string; actorUserId: string; actorEmail?: string },
+): Promise<{ url: string; fileName: string }> {
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app || app.companyId !== ctx.companyId) {
+    throw new ApplicationError("Application not found.", 404);
+  }
+
+  const download = await fetchJson<{ url: string; fileName: string }>(
+    `${env.profileServiceUrl}/api/v1/internal/candidates/${app.candidateUserId}/resume/download`,
+    {
+      headers: {
+        "x-internal-service-key": env.internalServiceKey,
+      },
+    },
+  );
+
+  void recordTenantAudit({
+    companyId: ctx.companyId,
+    actorUserId: ctx.actorUserId,
+    actorEmail: ctx.actorEmail ?? null,
+    action: "application.resume.download",
+    resourceType: "application",
+    resourceId: app.id,
+    metadata: { candidateUserId: app.candidateUserId, jobId: app.jobId },
+  }).catch((error) => console.error("[audit] resume download failed:", error));
+
+  return download;
 }
 
 export async function syncApplicationStatusByInterviewId(

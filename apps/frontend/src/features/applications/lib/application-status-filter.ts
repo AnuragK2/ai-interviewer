@@ -22,6 +22,7 @@ const acceptedStatuses = new Set<ApplicationStatus>([
   "INTERVIEW_PENDING",
   "INTERVIEW_IN_PROGRESS",
   "INTERVIEW_COMPLETED",
+  "SELECTED",
 ]);
 
 export function matchesApplicationStatusFilter(status: ApplicationStatus, filter: ApplicationStatusFilter) {

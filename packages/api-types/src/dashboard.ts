@@ -25,6 +25,17 @@ export type CandidateDashboardResponse = {
   topRecommendedJobs: RecommendedJobResponse[];
 };
 
+export type RecruiterDashboardApplicationSummary = {
+  id: string;
+  jobId: string;
+  jobTitle: string | null;
+  candidateName: string | null;
+  status: ApplicationStatus;
+  fitScore: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type RecruiterPipelineStage = {
   status: string;
   label: string;
@@ -43,6 +54,8 @@ export type RecruiterDashboardResponse = {
   newApplicantsLast7Days: number;
   awaitingReviewCount: number;
   awaitingInterviewFeedbackCount: number;
+  applicationsByStatus: ApplicationStatusCount[];
+  recentApplications: RecruiterDashboardApplicationSummary[];
   pipelineFunnel: RecruiterPipelineStage[];
   expiringJobs: RecruiterExpiringJobAlert[];
 };
