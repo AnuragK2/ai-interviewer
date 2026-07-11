@@ -99,3 +99,9 @@ export function createInterviewCancelledEvent(
 ): InterviewCancelledEvent {
   return createPlatformEvent<"interview.cancelled">({ type: "interview.cancelled", ...data });
 }
+
+export function createApplicationInvitedEvent(
+  data: Omit<ApplicationInvitedEvent, "eventId" | "timestamp" | "type">,
+): ApplicationInvitedEvent {
+  return createPlatformEvent<"application.invited">({ type: "application.invited", ...data });
+}

@@ -1,10 +1,13 @@
 import type {
   ApplicationResponse,
   ApplyToJobRequest,
+  CandidateApplicationDetailResponse,
   CandidateApplicationListResponse,
+  CreateInterviewFromApplicationResponse,
+  InterviewAccessResponse,
   RecruiterApplicationListResponse,
 } from "@ai-interviewer/api-types";
-import { createPlatformEvent, EventSubjects } from "@ai-interviewer/api-types";
+import { canStartInterview, createApplicationInvitedEvent, createPlatformEvent, EventSubjects } from "@ai-interviewer/api-types";
 import { getEventBus } from "@ai-interviewer/event-bus";
 import { prisma } from "../../infrastructure/db/prisma.client";
 import { env } from "../../config/env";
@@ -28,7 +31,65 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-function toApplicationResponse(app: {
+function extractCandidateName(candidateSnapshot: unknown): string | null {
+  if (!candidateSnapshot || typeof candidateSnapshot !== "object") return null;
+
+  const snapshot = candidateSnapshot as { name?: unknown; parsedResume?: { name?: unknown } };
+  if (typeof snapshot.name === "string" && snapshot.name.trim()) return snapshot.name.trim();
+  if (typeof snapshot.parsedResume?.name === "string" && snapshot.parsedResume.name.trim()) {
+    return snapshot.parsedResume.name.trim();
+  }
+
+  return null;
+}
+
+function toApplicationResponse(
+  app: {
+    id: string;
+    jobId: string;
+    companyId: string;
+    candidateUserId: string;
+    coverLetter: string | null;
+    status: string;
+    fitScore: number | null;
+    fitSummary: string | null;
+    strengths: string[];
+    concerns: string[];
+    analyzedAt: Date | null;
+    interviewId: string | null;
+    invitedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+  candidateSnapshot?: unknown,
+): ApplicationResponse {
+  return {
+    id: app.id,
+    jobId: app.jobId,
+    companyId: app.companyId,
+    candidateUserId: app.candidateUserId,
+    candidateName: candidateSnapshot !== undefined ? extractCandidateName(candidateSnapshot) : null,
+    coverLetter: app.coverLetter,
+    status: app.status as ApplicationResponse["status"],
+    fitScore: app.fitScore,
+    fitSummary: app.fitSummary,
+    strengths: app.strengths,
+    concerns: app.concerns,
+    analyzedAt: app.analyzedAt ? app.analyzedAt.toISOString() : null,
+    interviewId: app.interviewId,
+    invitedAt: app.invitedAt ? app.invitedAt.toISOString() : null,
+    createdAt: app.createdAt.toISOString(),
+    updatedAt: app.updatedAt.toISOString(),
+  };
+}
+
+function extractJobTitle(jobSnapshot: unknown): string | null {
+  if (!jobSnapshot || typeof jobSnapshot !== "object") return null;
+  const title = (jobSnapshot as { title?: unknown }).title;
+  return typeof title === "string" && title.trim() ? title.trim() : null;
+}
+
+function toCandidateDetail(app: {
   id: string;
   jobId: string;
   companyId: string;
@@ -40,23 +101,18 @@ function toApplicationResponse(app: {
   strengths: string[];
   concerns: string[];
   analyzedAt: Date | null;
+  interviewId: string | null;
+  invitedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-}): ApplicationResponse {
+  jobSnapshot: unknown;
+  candidateSnapshot: unknown;
+}): CandidateApplicationDetailResponse {
+  const application = toApplicationResponse(app, app.candidateSnapshot);
   return {
-    id: app.id,
-    jobId: app.jobId,
-    companyId: app.companyId,
-    candidateUserId: app.candidateUserId,
-    coverLetter: app.coverLetter,
-    status: app.status as ApplicationResponse["status"],
-    fitScore: app.fitScore,
-    fitSummary: app.fitSummary,
-    strengths: app.strengths,
-    concerns: app.concerns,
-    analyzedAt: app.analyzedAt ? app.analyzedAt.toISOString() : null,
-    createdAt: app.createdAt.toISOString(),
-    updatedAt: app.updatedAt.toISOString(),
+    application,
+    jobTitle: extractJobTitle(app.jobSnapshot),
+    canStartInterview: canStartInterview(application.status, application.interviewId),
   };
 }
 
@@ -119,7 +175,7 @@ export async function applyToJob(
     }),
   );
 
-  return toApplicationResponse(created);
+  return toApplicationResponse(created, created.candidateSnapshot);
 }
 
 export async function listCandidateApplications(candidateUserId: string): Promise<CandidateApplicationListResponse> {
@@ -128,7 +184,7 @@ export async function listCandidateApplications(candidateUserId: string): Promis
     orderBy: { createdAt: "desc" },
   });
 
-  return { applications: apps.map(toApplicationResponse) };
+  return { applications: apps.map((app) => toApplicationResponse(app, app.candidateSnapshot)) };
 }
 
 export async function listRecruiterApplicationsForJob(
@@ -143,7 +199,7 @@ export async function listRecruiterApplicationsForJob(
     orderBy: { createdAt: "desc" },
   });
 
-  return { applications: apps.map(toApplicationResponse) };
+  return { applications: apps.map((app) => toApplicationResponse(app, app.candidateSnapshot)) };
 }
 
 export async function getRecruiterApplicationPacket(
@@ -159,7 +215,7 @@ export async function getRecruiterApplicationPacket(
   }
 
   return {
-    application: toApplicationResponse(app),
+    application: toApplicationResponse(app, app.candidateSnapshot),
     jobSnapshot: app.jobSnapshot as any,
     candidateSnapshot: app.candidateSnapshot as any,
   };
@@ -181,6 +237,130 @@ export async function setAnalysis(
     },
   });
 
-  return toApplicationResponse(updated);
+  return toApplicationResponse(updated, updated.candidateSnapshot);
+}
+
+export async function getCandidateApplication(
+  applicationId: string,
+  candidateUserId: string,
+): Promise<CandidateApplicationDetailResponse> {
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app || app.candidateUserId !== candidateUserId) {
+    throw new ApplicationError("Application not found.", 404);
+  }
+
+  return toCandidateDetail(app);
+}
+
+export async function getInterviewAccess(
+  interviewId: string,
+  candidateUserId: string,
+): Promise<InterviewAccessResponse> {
+  const app = await prisma.application.findFirst({
+    where: {
+      interviewId,
+      candidateUserId,
+    },
+  });
+
+  if (!app) {
+    throw new ApplicationError("Interview access not found.", 404);
+  }
+
+  const detail = toCandidateDetail(app);
+  return {
+    application: detail.application,
+    jobTitle: detail.jobTitle,
+    canStartInterview: detail.canStartInterview,
+  };
+}
+
+export async function inviteToInterview(
+  applicationId: string,
+  ctx: { companyId: string },
+): Promise<ApplicationResponse> {
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app || app.companyId !== ctx.companyId) {
+    throw new ApplicationError("Application not found.", 404);
+  }
+
+  if (app.status !== "ANALYZED") {
+    throw new ApplicationError("Application must be analyzed before inviting to interview.", 400);
+  }
+
+  if (app.interviewId) {
+    throw new ApplicationError("This application has already been invited to interview.", 409);
+  }
+
+  const interviewResponse = await fetchJson<CreateInterviewFromApplicationResponse>(
+    `${env.interviewServiceUrl}/api/v1/interviews/from-application`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        applicationId: app.id,
+        jobSnapshot: app.jobSnapshot,
+        candidateSnapshot: app.candidateSnapshot,
+        fitScore: app.fitScore,
+        fitSummary: app.fitSummary,
+        strengths: app.strengths,
+        concerns: app.concerns,
+      }),
+    },
+  );
+
+  const updated = await prisma.application.update({
+    where: { id: applicationId },
+    data: {
+      status: "INTERVIEW_INVITED",
+      interviewId: interviewResponse.interview.id,
+      invitedAt: new Date(),
+    },
+  });
+
+  const bus = await getEventBus({ servers: env.natsUrl, name: env.serviceName });
+  await bus.publish(
+    EventSubjects.APPLICATION_INVITED,
+    createApplicationInvitedEvent({
+      correlationId: updated.id,
+      tenantId: updated.companyId,
+      applicationId: updated.id,
+      interviewId: updated.interviewId!,
+      candidateUserId: updated.candidateUserId,
+    }),
+  );
+
+  return toApplicationResponse(updated, updated.candidateSnapshot);
+}
+
+export async function markInterviewPending(applicationId: string, candidateUserId: string): Promise<ApplicationResponse> {
+  const app = await prisma.application.findUnique({ where: { id: applicationId } });
+  if (!app || app.candidateUserId !== candidateUserId) {
+    throw new ApplicationError("Application not found.", 404);
+  }
+
+  if (app.status !== "INTERVIEW_INVITED") {
+    throw new ApplicationError("Interview is not ready to start.", 400);
+  }
+
+  const updated = await prisma.application.update({
+    where: { id: applicationId },
+    data: { status: "INTERVIEW_PENDING" },
+  });
+
+  return toApplicationResponse(updated, updated.candidateSnapshot);
+}
+
+export async function syncApplicationStatusByInterviewId(
+  interviewId: string,
+  status: ApplicationResponse["status"],
+): Promise<void> {
+  const app = await prisma.application.findFirst({ where: { interviewId } });
+  if (!app) return;
+
+  await prisma.application.update({
+    where: { id: app.id },
+    data: { status },
+  });
 }
 

@@ -40,6 +40,7 @@ const MIN_USER_SPEECH_MS = 100;
 export class InterviewSessionService {
   private openai: OpenAIRealtimeSocket | null = null;
   private interviewId: string | null = null;
+  private applicationId: string | null = null;
   private ended = false;
   private agentTranscript = "";
   private startedAt = 0;
@@ -98,6 +99,7 @@ export class InterviewSessionService {
     }
 
     this.interviewId = interviewId;
+    this.applicationId = interview.applicationId ?? null;
 
     const resume = (interview.resume ?? {}) as ResumeData;
     const github = (interview.githubMetaData ?? {}) as GithubData;
@@ -118,6 +120,7 @@ export class InterviewSessionService {
       interviewId,
       resume: interview.resume,
       githubMetaData: interview.githubMetaData,
+      applicationContext: interview.applicationContext,
       onEvent: (event) => {
         void this.handleOpenAIEvent(event);
       },
@@ -142,6 +145,7 @@ export class InterviewSessionService {
         createInterviewStartedEvent({
           correlationId: interviewId,
           interviewId,
+          applicationId: interview.applicationId ?? undefined,
         }),
       );
     } catch (error) {
@@ -497,6 +501,7 @@ export class InterviewSessionService {
         createInterviewCancelledEvent({
           correlationId,
           interviewId: this.interviewId,
+          applicationId: this.applicationId ?? undefined,
           reason,
         }),
       );
@@ -506,6 +511,7 @@ export class InterviewSessionService {
         createInterviewCompletedEvent({
           correlationId,
           interviewId: this.interviewId,
+          applicationId: this.applicationId ?? undefined,
           score,
           reason,
         }),

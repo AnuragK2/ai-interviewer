@@ -5,5 +5,6 @@ export const env = {
   profileServiceUrl: process.env.PROFILE_SERVICE_URL ?? "http://localhost:3003",
   jobServiceUrl: process.env.JOB_SERVICE_URL ?? "http://localhost:3004",
   applicationServiceUrl: process.env.APPLICATION_SERVICE_URL ?? "http://localhost:3005",
+  notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL ?? "http://localhost:3006",
   jwtSecret: process.env.JWT_SECRET ?? "dev-secret-change-me",
 } as const;

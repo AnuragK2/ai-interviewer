@@ -3,23 +3,20 @@ import { useParams } from "react-router";
 import { toast } from "sonner";
 import type { RecruiterApplicationPacketResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CandidateSnapshotView } from "@/features/applications/components/CandidateSnapshotView";
+import { JobSnapshotView } from "@/features/applications/components/JobSnapshotView";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { getCandidateName, getJobTitle } from "@/features/applications/lib/parse-snapshot";
 import * as applicationApi from "@/features/applications/services/application-api";
-
-function prettyJson(value: unknown) {
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
 
 export function RecruiterApplicationPacketPage() {
   const { id } = useParams();
   const [packet, setPacket] = useState<RecruiterApplicationPacketResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -31,12 +28,60 @@ export function RecruiterApplicationPacketPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  async function handleInvite() {
+    if (!id) return;
+    setInviting(true);
+    try {
+      const application = await applicationApi.inviteToInterview(id);
+      setPacket((current) =>
+        current
+          ? {
+              ...current,
+              application,
+            }
+          : current,
+      );
+      toast.success("Candidate invited to interview.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to invite candidate.");
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  const canInvite = packet?.application.status === "ANALYZED";
+  const candidateName =
+    packet?.application.candidateName ??
+    (packet ? getCandidateName(packet.candidateSnapshot) : null);
+  const jobTitle = packet ? getJobTitle(packet.jobSnapshot) : null;
+
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Applicant packet"
-        title={loading ? "Loading…" : "Application packet"}
-        description={packet?.application.id}
+        title={loading ? "Loading…" : (candidateName ?? "Application packet")}
+        description={
+          loading
+            ? undefined
+            : [jobTitle, packet ? `Applied ${packet.application.createdAt.slice(0, 10)}` : null]
+                .filter(Boolean)
+                .join(" · ")
+        }
+        actions={
+          packet ? (
+            <Button
+              disabled={!canInvite || inviting || Boolean(packet.application.interviewId)}
+              onClick={handleInvite}
+              className="bg-indigo-600 hover:bg-indigo-500"
+            >
+              {packet.application.interviewId
+                ? "Interview invited"
+                : inviting
+                  ? "Inviting…"
+                  : "Invite to interview"}
+            </Button>
+          ) : null
+        }
       />
 
       <GlowingCard>
@@ -63,8 +108,10 @@ export function RecruiterApplicationPacketPage() {
                   </p>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs text-muted-foreground">Candidate</p>
-                  <p className="text-sm font-mono">{packet.application.candidateUserId}</p>
+                  <p className="text-xs text-muted-foreground">Interview</p>
+                  <p className="text-sm font-medium">
+                    {packet.application.interviewId ? packet.application.interviewId : "Not invited"}
+                  </p>
                 </div>
               </div>
 
@@ -115,26 +162,23 @@ export function RecruiterApplicationPacketPage() {
         </CardContent>
       </GlowingCard>
 
-      <Card className="border-white/10 bg-card/80 backdrop-blur-xl">
-        <CardHeader>
-          <CardTitle>Snapshots</CardTitle>
-          <CardDescription>What the system used for matching at apply time.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Job snapshot</p>
-            <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-white/5 p-4 text-xs">
-              {packet ? prettyJson(packet.jobSnapshot) : ""}
-            </pre>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Candidate snapshot</p>
-            <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-white/5 p-4 text-xs">
-              {packet ? prettyJson(packet.candidateSnapshot) : ""}
-            </pre>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <GlowingCard>
+          <CardHeader>
+            <CardTitle>Job listing</CardTitle>
+            <CardDescription>Role requirements captured when the candidate applied.</CardDescription>
+          </CardHeader>
+          <CardContent>{packet ? <JobSnapshotView snapshot={packet.jobSnapshot} /> : null}</CardContent>
+        </GlowingCard>
+
+        <GlowingCard>
+          <CardHeader>
+            <CardTitle>Candidate profile</CardTitle>
+            <CardDescription>Resume, skills, and experience at apply time.</CardDescription>
+          </CardHeader>
+          <CardContent>{packet ? <CandidateSnapshotView snapshot={packet.candidateSnapshot} /> : null}</CardContent>
+        </GlowingCard>
+      </div>
     </PageContainer>
   );
 }

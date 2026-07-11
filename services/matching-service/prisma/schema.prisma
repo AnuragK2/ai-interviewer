@@ -11,6 +11,11 @@ enum ApplicationStatus {
   SUBMITTED
   ANALYZING
   ANALYZED
+  INTERVIEW_INVITED
+  INTERVIEW_PENDING
+  INTERVIEW_IN_PROGRESS
+  INTERVIEW_COMPLETED
+  INTERVIEW_CANCELLED
 }
 
 model Application {
@@ -31,12 +36,15 @@ model Application {
   concerns      String[]
   analyzedAt    DateTime?
 
+  interviewId   String?
+  invitedAt     DateTime?
+
   createdAt     DateTime
   updatedAt     DateTime
 
   @@index([jobId])
   @@index([companyId])
   @@index([candidateUserId])
+  @@index([interviewId])
   @@unique([jobId, candidateUserId])
 }
-

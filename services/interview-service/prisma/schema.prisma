@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -13,33 +11,33 @@ datasource db {
 }
 
 model Interview {
-  id             String          @id @default(uuid())
-  githubMetaData Json            @default("{}")
-  resume         Json            @default("{}")
-  status         InterviewStatus @default(PENDING)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  score          Int             @default(0)
-  conversations  Message[]
+  id                  String          @id @default(uuid())
+  applicationId       String?         @unique
+  applicationContext  Json            @default("{}")
+  githubMetaData      Json            @default("{}")
+  resume              Json            @default("{}")
+  status              InterviewStatus @default(PENDING)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  score               Int             @default(0)
+  conversations       Message[]
 }
 
-
-model Message{
-  id   String   @id @default(uuid())
-  message String
+model Message {
+  id          String             @id @default(uuid())
+  message     String
   participant MessageParticipant
   interviewId String
-  createdAt DateTime @default(now())
-  interview Interview @relation(fields: [interviewId], references: [id])
+  createdAt   DateTime           @default(now())
+  interview   Interview          @relation(fields: [interviewId], references: [id])
 }
 
-enum MessageParticipant{
-  User  
+enum MessageParticipant {
+  User
   Assistant
 }
 
-
-enum InterviewStatus{
+enum InterviewStatus {
   PENDING
   IN_PROGRESS
   COMPLETED

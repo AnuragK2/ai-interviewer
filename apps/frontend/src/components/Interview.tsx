@@ -4,6 +4,9 @@ import { clearInterviewSession, loadInterviewSession } from "@/shared/lib/interv
 import { saveInterviewEndState } from "@/shared/lib/interview-end-state";
 import { stopMediaStream } from "@/shared/lib/media-stream";
 import { useProctoring } from "@/features/proctoring/hooks/use-proctoring";
+import * as applicationApi from "@/features/applications/services/application-api";
+import { getAccessToken } from "@/shared/lib/auth-storage";
+import type { PreInterviewResponse } from "@/shared/api/types";
 import {
   connectRealtimeInterview,
   type BackendInterviewEvent,
@@ -32,13 +35,72 @@ export function Interview() {
   const [userSpeaking, setUserSpeaking] = useState(false);
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isCameraEnabled, setIsCameraEnabled] = useState(true);
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [platformProfile, setPlatformProfile] = useState<PreInterviewResponse | null>(null);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const realtimeRef = useRef<RealtimeConnection | null>(null);
   const agentMessageIdRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  const profile = useMemo(() => (id ? loadInterviewSession(id) : null), [id]);
+  const legacyProfile = useMemo(() => (id ? loadInterviewSession(id) : null), [id]);
+  const profile = legacyProfile ?? platformProfile;
+
+  useEffect(() => {
+    if (!id) return;
+
+    if (legacyProfile) {
+      setAccessGranted(true);
+      setAccessChecked(true);
+      return;
+    }
+
+    if (!getAccessToken()) {
+      setAccessGranted(false);
+      setAccessChecked(true);
+      return;
+    }
+
+    let cancelled = false;
+    void applicationApi
+      .getInterviewAccess(id)
+      .then((access) => {
+        if (cancelled) return;
+        setAccessGranted(access.canStartInterview);
+        setPlatformProfile({
+          interview: {
+            id,
+            status: "PENDING",
+            score: 0,
+            createdAt: new Date().toISOString(),
+          },
+          resume: {
+            rawText: "",
+            skills: [],
+            experience: [],
+            education: [],
+            projects: [],
+            name: access.jobTitle ?? "Candidate",
+          },
+          github: {
+            username: "",
+            profileUrl: "",
+            repos: [],
+          },
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setAccessGranted(false);
+      })
+      .finally(() => {
+        if (!cancelled) setAccessChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, legacyProfile]);
 
   const proctoring = useProctoring({
     videoRef,
@@ -242,7 +304,11 @@ export function Interview() {
     };
   }, [checksPassed, connectionStatus]);
 
-  if (!id || !profile) {
+  if (!id || !accessChecked) {
+    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Checking interview access…</div>;
+  }
+
+  if (!profile || !accessGranted) {
     return <Navigate to="/" replace />;
   }
 

@@ -13,6 +13,7 @@ import { OAuthCallbackPage } from "@/features/auth/pages/OAuthCallbackPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { CandidateDashboardPage } from "@/features/candidate/pages/DashboardPage";
 import { CandidateApplicationsPage } from "@/features/candidate/pages/ApplicationsPage";
+import { CandidateApplicationAnalyticsPage } from "@/features/candidate/pages/ApplicationAnalyticsPage";
 import { CandidateJobDetailPage } from "@/features/candidate/pages/JobDetailPage";
 import { CandidateJobsListPage } from "@/features/candidate/pages/JobsListPage";
 import { ProfilePage } from "@/features/candidate/pages/ProfilePage";
@@ -46,6 +47,7 @@ export function App() {
                 <Route path="/candidate/jobs" element={<CandidateJobsListPage />} />
                 <Route path="/candidate/jobs/:id" element={<CandidateJobDetailPage />} />
                 <Route path="/candidate/applications" element={<CandidateApplicationsPage />} />
+                <Route path="/candidate/applications/:id" element={<CandidateApplicationAnalyticsPage />} />
               </Route>
             </Route>
 

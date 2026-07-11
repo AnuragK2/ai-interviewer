@@ -44,6 +44,8 @@ export type ApplicationMinAggregateOutputType = {
   fitScore: number | null
   fitSummary: string | null
   analyzedAt: Date | null
+  interviewId: string | null
+  invitedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -58,6 +60,8 @@ export type ApplicationMaxAggregateOutputType = {
   fitScore: number | null
   fitSummary: string | null
   analyzedAt: Date | null
+  interviewId: string | null
+  invitedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -76,6 +80,8 @@ export type ApplicationCountAggregateOutputType = {
   strengths: number
   concerns: number
   analyzedAt: number
+  interviewId: number
+  invitedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -100,6 +106,8 @@ export type ApplicationMinAggregateInputType = {
   fitScore?: true
   fitSummary?: true
   analyzedAt?: true
+  interviewId?: true
+  invitedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -114,6 +122,8 @@ export type ApplicationMaxAggregateInputType = {
   fitScore?: true
   fitSummary?: true
   analyzedAt?: true
+  interviewId?: true
+  invitedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -132,6 +142,8 @@ export type ApplicationCountAggregateInputType = {
   strengths?: true
   concerns?: true
   analyzedAt?: true
+  interviewId?: true
+  invitedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -237,6 +249,8 @@ export type ApplicationGroupByOutputType = {
   strengths: string[]
   concerns: string[]
   analyzedAt: Date | null
+  interviewId: string | null
+  invitedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: ApplicationCountAggregateOutputType | null
@@ -278,6 +292,8 @@ export type ApplicationWhereInput = {
   strengths?: Prisma.StringNullableListFilter<"Application">
   concerns?: Prisma.StringNullableListFilter<"Application">
   analyzedAt?: Prisma.DateTimeNullableFilter<"Application"> | Date | string | null
+  interviewId?: Prisma.StringNullableFilter<"Application"> | string | null
+  invitedAt?: Prisma.DateTimeNullableFilter<"Application"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Application"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Application"> | Date | string
 }
@@ -296,6 +312,8 @@ export type ApplicationOrderByWithRelationInput = {
   strengths?: Prisma.SortOrder
   concerns?: Prisma.SortOrder
   analyzedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  interviewId?: Prisma.SortOrderInput | Prisma.SortOrder
+  invitedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -318,6 +336,8 @@ export type ApplicationWhereUniqueInput = Prisma.AtLeast<{
   strengths?: Prisma.StringNullableListFilter<"Application">
   concerns?: Prisma.StringNullableListFilter<"Application">
   analyzedAt?: Prisma.DateTimeNullableFilter<"Application"> | Date | string | null
+  interviewId?: Prisma.StringNullableFilter<"Application"> | string | null
+  invitedAt?: Prisma.DateTimeNullableFilter<"Application"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Application"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Application"> | Date | string
 }, "id" | "jobId_candidateUserId">
@@ -336,6 +356,8 @@ export type ApplicationOrderByWithAggregationInput = {
   strengths?: Prisma.SortOrder
   concerns?: Prisma.SortOrder
   analyzedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  interviewId?: Prisma.SortOrderInput | Prisma.SortOrder
+  invitedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ApplicationCountOrderByAggregateInput
@@ -362,6 +384,8 @@ export type ApplicationScalarWhereWithAggregatesInput = {
   strengths?: Prisma.StringNullableListFilter<"Application">
   concerns?: Prisma.StringNullableListFilter<"Application">
   analyzedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Application"> | Date | string | null
+  interviewId?: Prisma.StringNullableWithAggregatesFilter<"Application"> | string | null
+  invitedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Application"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Application"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Application"> | Date | string
 }
@@ -380,6 +404,8 @@ export type ApplicationCreateInput = {
   strengths?: Prisma.ApplicationCreatestrengthsInput | string[]
   concerns?: Prisma.ApplicationCreateconcernsInput | string[]
   analyzedAt?: Date | string | null
+  interviewId?: string | null
+  invitedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -398,6 +424,8 @@ export type ApplicationUncheckedCreateInput = {
   strengths?: Prisma.ApplicationCreatestrengthsInput | string[]
   concerns?: Prisma.ApplicationCreateconcernsInput | string[]
   analyzedAt?: Date | string | null
+  interviewId?: string | null
+  invitedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -416,6 +444,8 @@ export type ApplicationUpdateInput = {
   strengths?: Prisma.ApplicationUpdatestrengthsInput | string[]
   concerns?: Prisma.ApplicationUpdateconcernsInput | string[]
   analyzedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  interviewId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invitedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -434,6 +464,8 @@ export type ApplicationUncheckedUpdateInput = {
   strengths?: Prisma.ApplicationUpdatestrengthsInput | string[]
   concerns?: Prisma.ApplicationUpdateconcernsInput | string[]
   analyzedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  interviewId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invitedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -452,6 +484,8 @@ export type ApplicationCreateManyInput = {
   strengths?: Prisma.ApplicationCreatestrengthsInput | string[]
   concerns?: Prisma.ApplicationCreateconcernsInput | string[]
   analyzedAt?: Date | string | null
+  interviewId?: string | null
+  invitedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -470,6 +504,8 @@ export type ApplicationUpdateManyMutationInput = {
   strengths?: Prisma.ApplicationUpdatestrengthsInput | string[]
   concerns?: Prisma.ApplicationUpdateconcernsInput | string[]
   analyzedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  interviewId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invitedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -488,6 +524,8 @@ export type ApplicationUncheckedUpdateManyInput = {
   strengths?: Prisma.ApplicationUpdatestrengthsInput | string[]
   concerns?: Prisma.ApplicationUpdateconcernsInput | string[]
   analyzedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  interviewId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  invitedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -519,6 +557,8 @@ export type ApplicationCountOrderByAggregateInput = {
   strengths?: Prisma.SortOrder
   concerns?: Prisma.SortOrder
   analyzedAt?: Prisma.SortOrder
+  interviewId?: Prisma.SortOrder
+  invitedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -537,6 +577,8 @@ export type ApplicationMaxOrderByAggregateInput = {
   fitScore?: Prisma.SortOrder
   fitSummary?: Prisma.SortOrder
   analyzedAt?: Prisma.SortOrder
+  interviewId?: Prisma.SortOrder
+  invitedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -551,6 +593,8 @@ export type ApplicationMinOrderByAggregateInput = {
   fitScore?: Prisma.SortOrder
   fitSummary?: Prisma.SortOrder
   analyzedAt?: Prisma.SortOrder
+  interviewId?: Prisma.SortOrder
+  invitedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -621,6 +665,8 @@ export type ApplicationSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   strengths?: boolean
   concerns?: boolean
   analyzedAt?: boolean
+  interviewId?: boolean
+  invitedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["application"]>
@@ -639,6 +685,8 @@ export type ApplicationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   strengths?: boolean
   concerns?: boolean
   analyzedAt?: boolean
+  interviewId?: boolean
+  invitedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["application"]>
@@ -657,6 +705,8 @@ export type ApplicationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   strengths?: boolean
   concerns?: boolean
   analyzedAt?: boolean
+  interviewId?: boolean
+  invitedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["application"]>
@@ -675,11 +725,13 @@ export type ApplicationSelectScalar = {
   strengths?: boolean
   concerns?: boolean
   analyzedAt?: boolean
+  interviewId?: boolean
+  invitedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ApplicationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "jobId" | "companyId" | "candidateUserId" | "coverLetter" | "status" | "jobSnapshot" | "candidateSnapshot" | "fitScore" | "fitSummary" | "strengths" | "concerns" | "analyzedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["application"]>
+export type ApplicationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "jobId" | "companyId" | "candidateUserId" | "coverLetter" | "status" | "jobSnapshot" | "candidateSnapshot" | "fitScore" | "fitSummary" | "strengths" | "concerns" | "analyzedAt" | "interviewId" | "invitedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["application"]>
 
 export type $ApplicationPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Application"
@@ -704,6 +756,11 @@ export type $ApplicationPayload<ExtArgs extends runtime.Types.Extensions.Interna
     strengths: string[]
     concerns: string[]
     analyzedAt: Date | null
+    /**
+     * * Interview invite (Phase 5).
+     */
+    interviewId: string | null
+    invitedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["application"]>
@@ -1142,6 +1199,8 @@ export interface ApplicationFieldRefs {
   readonly strengths: Prisma.FieldRef<"Application", 'String[]'>
   readonly concerns: Prisma.FieldRef<"Application", 'String[]'>
   readonly analyzedAt: Prisma.FieldRef<"Application", 'DateTime'>
+  readonly interviewId: Prisma.FieldRef<"Application", 'String'>
+  readonly invitedAt: Prisma.FieldRef<"Application", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Application", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Application", 'DateTime'>
 }

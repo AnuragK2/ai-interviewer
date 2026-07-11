@@ -3,9 +3,13 @@ import { Router } from "express";
 import {
   applyToJob,
   ApplicationError,
+  getCandidateApplication,
+  getInterviewAccess,
   getRecruiterApplicationPacket,
+  inviteToInterview,
   listCandidateApplications,
   listRecruiterApplicationsForJob,
+  markInterviewPending,
 } from "../../../application/applications/application.service";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { requireCandidateAuth, requireRecruiterAuth } from "../middleware/auth.middleware";
@@ -31,6 +35,51 @@ applicationsRouter.get("/me", requireCandidateAuth, async (req: AuthenticatedReq
   try {
     const result = await listCandidateApplications(req.auth!.sub);
     res.json(result);
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.get("/me/by-interview/:interviewId", requireCandidateAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const interviewId = getRouteParam(req.params.interviewId);
+    if (!interviewId) {
+      res.status(400).json({ error: "Invalid interview id." });
+      return;
+    }
+
+    const result = await getInterviewAccess(interviewId, req.auth!.sub);
+    res.json(result);
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.get("/:id", requireCandidateAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const applicationId = getRouteParam(req.params.id);
+    if (!applicationId) {
+      res.status(400).json({ error: "Invalid application id." });
+      return;
+    }
+
+    const result = await getCandidateApplication(applicationId, req.auth!.sub);
+    res.json(result);
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.post("/:id/start-interview", requireCandidateAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const applicationId = getRouteParam(req.params.id);
+    if (!applicationId) {
+      res.status(400).json({ error: "Invalid application id." });
+      return;
+    }
+
+    const application = await markInterviewPending(applicationId, req.auth!.sub);
+    res.json({ application });
   } catch (error) {
     handleApplicationsRouteError(res, error);
   }
@@ -65,6 +114,21 @@ applicationsRouter.get("/_recruiter/:id", requireRecruiterAuth, async (req: Auth
 
     const result = await getRecruiterApplicationPacket(applicationId, { companyId: req.auth!.companyId! });
     res.json(result);
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.post("/_recruiter/:id/invite", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const applicationId = getRouteParam(req.params.id);
+    if (!applicationId) {
+      res.status(400).json({ error: "Invalid application id." });
+      return;
+    }
+
+    const application = await inviteToInterview(applicationId, { companyId: req.auth!.companyId! });
+    res.status(201).json({ application });
   } catch (error) {
     handleApplicationsRouteError(res, error);
   }

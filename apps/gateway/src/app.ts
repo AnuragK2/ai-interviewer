@@ -62,12 +62,17 @@ export function createApplicationProxy() {
   return createServiceProxy(env.applicationServiceUrl, "application-service");
 }
 
+export function createNotificationProxy() {
+  return createServiceProxy(env.notificationServiceUrl, "notification-service");
+}
+
 export function createGatewayApp() {
   const app = express();
   const identityProxy = createIdentityProxy();
   const profileProxy = createProfileProxy();
   const jobProxy = createJobProxy();
   const applicationProxy = createApplicationProxy();
+  const notificationProxy = createNotificationProxy();
   const interviewProxy = createInterviewProxy();
 
   app.use(cors());
@@ -100,6 +105,11 @@ export function createGatewayApp() {
       return;
     }
 
+    if (path.startsWith("/api/v1/notifications")) {
+      notificationProxy(req, res, next);
+      return;
+    }
+
     if (path.startsWith("/api")) {
       interviewProxy(req, res, next);
       return;
@@ -112,5 +122,5 @@ export function createGatewayApp() {
     res.status(404).json({ error: "Not found." });
   });
 
-  return { app, identityProxy, profileProxy, jobProxy, applicationProxy, interviewProxy };
+  return { app, identityProxy, profileProxy, jobProxy, applicationProxy, notificationProxy, interviewProxy };
 }

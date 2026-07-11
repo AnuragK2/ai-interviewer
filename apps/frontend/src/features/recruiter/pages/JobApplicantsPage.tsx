@@ -76,11 +76,11 @@ export function RecruiterJobApplicantsPage() {
                     <span className={`rounded-full border px-3 py-1 text-xs ${statusBadgeClasses(app.status)}`}>
                       {app.status}
                     </span>
-                    <span className="text-xs text-muted-foreground font-mono">{app.id}</span>
+                    <span className="text-xs text-muted-foreground">
+                      Applied {app.createdAt.slice(0, 10)}
+                    </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Candidate: <span className="font-mono">{app.candidateUserId}</span>
-                  </p>
+                  <p className="text-sm font-medium">{app.candidateName ?? "Unknown candidate"}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-2 sm:justify-end">

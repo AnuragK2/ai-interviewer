@@ -193,6 +193,9 @@ export function CandidateJobDetailPage() {
                       </p>
                       <ApplicationAnalysisCard application={application} />
                       <Button variant="outline" size="sm" asChild className="border-white/10 bg-white/5">
+                        <Link to={`/candidate/applications/${application.id}`}>View application analytics</Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild className="border-white/10 bg-white/5">
                         <Link to="/candidate/applications">View all applications</Link>
                       </Button>
                     </div>

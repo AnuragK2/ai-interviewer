@@ -14,6 +14,15 @@ function statusBadgeClasses(status: ApplicationResponse["status"]) {
       return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
     case "ANALYZING":
       return "border-indigo-500/30 bg-indigo-500/10 text-indigo-200";
+    case "INTERVIEW_INVITED":
+    case "INTERVIEW_PENDING":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    case "INTERVIEW_IN_PROGRESS":
+      return "border-sky-500/30 bg-sky-500/10 text-sky-200";
+    case "INTERVIEW_COMPLETED":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+    case "INTERVIEW_CANCELLED":
+      return "border-red-500/30 bg-red-500/10 text-red-200";
     default:
       return "border-border bg-muted/20 text-muted-foreground";
   }
@@ -80,6 +89,10 @@ export function CandidateApplicationsPage() {
                       Job:{" "}
                       <Link to={`/candidate/jobs/${app.jobId}`} className="text-indigo-300 hover:underline">
                         View job
+                      </Link>
+                      {" · "}
+                      <Link to={`/candidate/applications/${app.id}`} className="text-indigo-300 hover:underline">
+                        Application analytics
                       </Link>
                     </p>
                   </div>

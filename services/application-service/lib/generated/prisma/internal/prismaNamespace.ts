@@ -531,6 +531,8 @@ export const ApplicationScalarFieldEnum = {
   strengths: 'strengths',
   concerns: 'concerns',
   analyzedAt: 'analyzedAt',
+  interviewId: 'interviewId',
+  invitedAt: 'invitedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

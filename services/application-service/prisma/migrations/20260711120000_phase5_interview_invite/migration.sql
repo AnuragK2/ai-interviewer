@@ -1,0 +1,11 @@
+-- Phase 5: interview invite statuses and linkage
+ALTER TYPE "ApplicationStatus" ADD VALUE IF NOT EXISTS 'INTERVIEW_INVITED';
+ALTER TYPE "ApplicationStatus" ADD VALUE IF NOT EXISTS 'INTERVIEW_PENDING';
+ALTER TYPE "ApplicationStatus" ADD VALUE IF NOT EXISTS 'INTERVIEW_IN_PROGRESS';
+ALTER TYPE "ApplicationStatus" ADD VALUE IF NOT EXISTS 'INTERVIEW_COMPLETED';
+ALTER TYPE "ApplicationStatus" ADD VALUE IF NOT EXISTS 'INTERVIEW_CANCELLED';
+
+ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "interviewId" TEXT;
+ALTER TABLE "Application" ADD COLUMN IF NOT EXISTS "invitedAt" TIMESTAMP(3);
+
+CREATE INDEX IF NOT EXISTS "Application_interviewId_idx" ON "Application"("interviewId");

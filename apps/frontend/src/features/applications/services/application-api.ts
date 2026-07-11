@@ -1,7 +1,9 @@
 import type {
   ApplicationResponse,
   ApplyToJobRequest,
+  CandidateApplicationDetailResponse,
   CandidateApplicationListResponse,
+  InterviewAccessResponse,
   RecruiterApplicationListResponse,
   RecruiterApplicationPacketResponse,
 } from "@ai-interviewer/api-types";
@@ -40,6 +42,30 @@ export async function applyToJob(input: ApplyToJobRequest): Promise<ApplicationR
 export async function listMyApplications(): Promise<ApplicationResponse[]> {
   const data = await applicationFetch<CandidateApplicationListResponse>("/api/v1/applications/me");
   return data.applications;
+}
+
+export async function getCandidateApplication(applicationId: string): Promise<CandidateApplicationDetailResponse> {
+  return applicationFetch<CandidateApplicationDetailResponse>(`/api/v1/applications/${applicationId}`);
+}
+
+export async function getInterviewAccess(interviewId: string): Promise<InterviewAccessResponse> {
+  return applicationFetch<InterviewAccessResponse>(`/api/v1/applications/me/by-interview/${interviewId}`);
+}
+
+export async function markInterviewPending(applicationId: string): Promise<ApplicationResponse> {
+  const data = await applicationFetch<{ application: ApplicationResponse }>(
+    `/api/v1/applications/${applicationId}/start-interview`,
+    { method: "POST" },
+  );
+  return data.application;
+}
+
+export async function inviteToInterview(applicationId: string): Promise<ApplicationResponse> {
+  const data = await applicationFetch<{ application: ApplicationResponse }>(
+    `/api/v1/applications/_recruiter/${applicationId}/invite`,
+    { method: "POST" },
+  );
+  return data.application;
 }
 
 export async function listApplicantsForJob(jobId: string): Promise<ApplicationResponse[]> {

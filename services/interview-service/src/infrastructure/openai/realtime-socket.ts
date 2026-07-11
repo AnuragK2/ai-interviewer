@@ -7,6 +7,7 @@ type OpenAIRealtimeSocketOptions = {
   interviewId: string;
   resume: unknown;
   githubMetaData: unknown;
+  applicationContext?: unknown;
   onEvent: (event: Record<string, unknown>) => void;
   onClose: () => void;
   onError: (message: string) => void;
@@ -86,6 +87,7 @@ export class OpenAIRealtimeSocket {
     const instructions = buildInterviewInstructions(
       this.options.resume,
       this.options.githubMetaData,
+      this.options.applicationContext,
     );
     this.baseInstructions = instructions;
 

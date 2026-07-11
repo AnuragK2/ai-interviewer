@@ -1,0 +1,34 @@
+{
+  "name": "@ai-interviewer/notification-service",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts",
+    "check-types": "tsc --noEmit",
+    "db:migrate": "bunx prisma migrate dev",
+    "db:generate": "bunx prisma generate"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
+    "@types/pg": "^8.20.0",
+    "prisma": "^7.8.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@ai-interviewer/api-types": "workspace:*",
+    "@ai-interviewer/event-bus": "workspace:*",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@types/express": "^5.0.6",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jose": "^6.0.11",
+    "pg": "^8.22.0"
+  }
+}
