@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  ANALYZING
+  ANALYZED
+}
+
+model Application {
+  id              String            @id
+  jobId           String
+  companyId       String
+  candidateUserId String
+
+  coverLetter     String?
+  status          ApplicationStatus
+
+  jobSnapshot       Json
+  candidateSnapshot Json
+
+  fitScore      Int?
+  fitSummary    String?
+  strengths     String[]
+  concerns      String[]
+  analyzedAt    DateTime?
+
+  createdAt     DateTime
+  updatedAt     DateTime
+
+  @@index([jobId])
+  @@index([companyId])
+  @@index([candidateUserId])
+  @@unique([jobId, candidateUserId])
+}
+

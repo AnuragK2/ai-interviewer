@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PageShell } from "@/shared/components/PageShell";
+import { GlowingCard } from "@/components/aceternity/glowing-card";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as jobApi from "@/features/jobs/services/job-api";
 
@@ -76,7 +78,7 @@ function buildPayload(form: FormState) {
 }
 
 export function RecruiterJobEditPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = id === "new" || !id;
@@ -132,34 +134,34 @@ export function RecruiterJobEditPage() {
   }
 
   return (
-    <PageShell>
-      <div className="mx-auto max-w-4xl space-y-6 px-6 py-12">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-amber-400">Recruiter job</p>
-            <h1 className="text-3xl font-semibold">{isNew ? "New job" : "Edit job"}</h1>
-            <p className="text-sm text-muted-foreground">{user?.company?.name}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/recruiter/jobs">Jobs</Link>
-            </Button>
-            <Button variant="outline" onClick={logout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
+    <PageContainer size="md">
+      <PageHeader
+        eyebrow="Recruiter"
+        title={isNew ? "New job" : "Edit job"}
+        description={user?.company?.name}
+      />
 
-        <Card>
-          <CardHeader>
+      <GlowingCard>
+        <CardHeader>
             <CardTitle>Job details</CardTitle>
             <CardDescription>Draft first, then publish to show up in the candidate catalog.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : (
               <>
+                {!isNew ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/10 p-4">
+                    <div>
+                      <p className="text-sm font-medium">Applicants</p>
+                      <p className="text-xs text-muted-foreground">View candidate applications and analysis packets.</p>
+                    </div>
+                    <Button asChild variant="outline">
+                      <Link to={`/recruiter/jobs/${id}/applicants`}>View applicants</Link>
+                    </Button>
+                  </div>
+                ) : null}
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -270,16 +272,15 @@ export function RecruiterJobEditPage() {
                   </div>
                 </div>
                 <div className="flex justify-end pt-2">
-                  <Button onClick={() => void handleSave()} disabled={saving}>
+                  <Button onClick={() => void handleSave()} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500">
                     {saving ? "Saving…" : isNew ? "Create job" : "Save changes"}
                   </Button>
                 </div>
               </>
             )}
           </CardContent>
-        </Card>
-      </div>
-    </PageShell>
+      </GlowingCard>
+    </PageContainer>
   );
 }
 

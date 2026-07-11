@@ -58,11 +58,16 @@ export function createIdentityProxy() {
   return createServiceProxy(env.identityServiceUrl, "identity-service");
 }
 
+export function createApplicationProxy() {
+  return createServiceProxy(env.applicationServiceUrl, "application-service");
+}
+
 export function createGatewayApp() {
   const app = express();
   const identityProxy = createIdentityProxy();
   const profileProxy = createProfileProxy();
   const jobProxy = createJobProxy();
+  const applicationProxy = createApplicationProxy();
   const interviewProxy = createInterviewProxy();
 
   app.use(cors());
@@ -90,6 +95,11 @@ export function createGatewayApp() {
       return;
     }
 
+    if (path.startsWith("/api/v1/applications")) {
+      applicationProxy(req, res, next);
+      return;
+    }
+
     if (path.startsWith("/api")) {
       interviewProxy(req, res, next);
       return;
@@ -102,5 +112,5 @@ export function createGatewayApp() {
     res.status(404).json({ error: "Not found." });
   });
 
-  return { app, identityProxy, profileProxy, jobProxy, interviewProxy };
+  return { app, identityProxy, profileProxy, jobProxy, applicationProxy, interviewProxy };
 }

@@ -1,45 +1,39 @@
 import { Link } from "react-router";
+import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageShell } from "@/shared/components/PageShell";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/context/auth-context";
 
 export function RecruiterDashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
-    <PageShell>
-      <div className="mx-auto max-w-4xl px-6 py-16">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-amber-400">Recruiter dashboard</p>
-            <h1 className="text-3xl font-semibold">{user?.company?.name ?? "Your company"}</h1>
-          </div>
-          <Button variant="outline" onClick={logout}>
-            Sign out
-          </Button>
-        </div>
+    <PageContainer>
+      <PageHeader
+        eyebrow="Recruiter"
+        title={user?.company?.name ?? "Your company"}
+        description={`Workspace scoped to ${user?.company?.slug ?? "your tenant"}.`}
+      />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Company workspace ready</CardTitle>
-            <CardDescription>
-              All data is scoped to your tenant ({user?.company?.slug}).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
-            <p>Signed in as {user?.email}</p>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild>
-                <Link to="/recruiter/jobs">Manage jobs</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/recruiter/jobs/new">Create job</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </PageShell>
+      <GlowingCard>
+        <CardHeader>
+          <CardTitle>Company workspace</CardTitle>
+          <CardDescription>Manage job postings and review applicant packets with AI insights.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
+          <p>Signed in as {user?.email}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+              <Link to="/recruiter/jobs">Manage jobs</Link>
+            </Button>
+            <Button asChild variant="outline" className="border-white/10 bg-white/5">
+              <Link to="/recruiter/jobs/new">Create job</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </GlowingCard>
+    </PageContainer>
   );
 }

@@ -1,18 +1,34 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
-import type { JobResponse } from "@ai-interviewer/api-types";
+import type { ApplicationResponse, JobResponse } from "@ai-interviewer/api-types";
+import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageShell } from "@/shared/components/PageShell";
-import { useAuth } from "@/features/auth/context/auth-context";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { ApplicationAnalysisCard } from "@/features/applications/components/ApplicationAnalysisCard";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import * as jobApi from "@/features/jobs/services/job-api";
+import * as applicationApi from "@/features/applications/services/application-api";
 
 export function CandidateJobDetailPage() {
   const { id } = useParams();
-  const { logout } = useAuth();
   const [job, setJob] = useState<JobResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [application, setApplication] = useState<ApplicationResponse | null>(null);
+
+  const loadApplication = useCallback(async (jobId: string) => {
+    try {
+      const applications = await applicationApi.listMyApplications();
+      const existing = applications.find((app) => app.jobId === jobId) ?? null;
+      setApplication(existing);
+    } catch {
+      // Non-blocking: job page still works if applications API is unavailable.
+    }
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -21,111 +37,172 @@ export function CandidateJobDetailPage() {
       .then(setJob)
       .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load job."))
       .finally(() => setLoading(false));
-  }, [id]);
+
+    void loadApplication(id);
+  }, [id, loadApplication]);
+
+  useEffect(() => {
+    if (!id || application?.status !== "ANALYZING") return;
+
+    const interval = window.setInterval(() => {
+      void loadApplication(id);
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [id, application?.status, loadApplication]);
+
+  const applyDisabled = useMemo(() => {
+    if (loading || !job) return true;
+    if (job.isExpired || job.status !== "OPEN") return true;
+    return false;
+  }, [job, loading]);
+
+  async function handleApply() {
+    if (!id) return;
+    setApplying(true);
+    try {
+      const created = await applicationApi.applyToJob({
+        jobId: id,
+        coverLetter: coverLetter.trim() ? coverLetter.trim() : null,
+      });
+      setApplication(created);
+      toast.success("Applied successfully. Analysis will appear shortly.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to apply.");
+    } finally {
+      setApplying(false);
+    }
+  }
 
   return (
-    <PageShell>
-      <div className="mx-auto max-w-4xl space-y-6 px-6 py-12">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-teal-400">Job detail</p>
-            <h1 className="text-3xl font-semibold">{loading ? "Loading…" : job?.title ?? "Job"}</h1>
-            <p className="text-sm text-muted-foreground">{job?.location ?? ""}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/candidate/jobs">Back to jobs</Link>
-            </Button>
-            <Button variant="outline" onClick={logout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
+    <PageContainer size="md">
+      <PageHeader
+        eyebrow="Job detail"
+        title={loading ? "Loading…" : (job?.title ?? "Job")}
+        description={job?.location ?? undefined}
+        actions={
+          <Button asChild variant="outline" className="border-white/10 bg-white/5">
+            <Link to="/candidate/jobs">Back to jobs</Link>
+          </Button>
+        }
+      />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>About the role</CardTitle>
-            <CardDescription>
-              {job?.status ? `Status: ${job.status}` : ""} {job?.isExpired ? "· expired" : ""}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
-            ) : !job ? (
-              <p className="text-sm text-muted-foreground">Job not found.</p>
-            ) : (
-              <>
+      <GlowingCard>
+        <CardHeader>
+          <CardTitle>About the role</CardTitle>
+          <CardDescription>
+            {job?.status ? `Status: ${job.status}` : ""} {job?.isExpired ? "· expired" : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : !job ? (
+            <p className="text-sm text-muted-foreground">Job not found.</p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Description</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{job.description}</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Description</p>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{job.description}</p>
+                  <p className="text-sm text-muted-foreground">Required skills</p>
+                  {job.requiredSkills.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">None listed</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {job.requiredSkills.map((skill) => (
+                        <span key={skill} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Preferred skills</p>
+                  {job.preferredSkills.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">None listed</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {job.preferredSkills.map((skill) => (
+                        <span key={skill} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Required skills</p>
-                    {job.requiredSkills.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">None listed</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {job.requiredSkills.map((skill) => (
-                          <span key={skill} className="rounded-full border border-border px-3 py-1 text-xs">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Preferred skills</p>
-                    {job.preferredSkills.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">None listed</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {job.preferredSkills.map((skill) => (
-                          <span key={skill} className="rounded-full border border-border px-3 py-1 text-xs">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Work style</p>
+                  <p className="text-sm">{job.workStyle ?? "Not specified"}</p>
                 </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Employment type</p>
+                  <p className="text-sm">
+                    {job.employmentTypes.length ? job.employmentTypes.join(", ") : "Not specified"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Salary</p>
+                  <p className="text-sm">
+                    {job.salaryMin || job.salaryMax
+                      ? `${job.currency} ${job.salaryMin ?? "?"} – ${job.salaryMax ?? "?"}`
+                      : "Not specified"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Expires</p>
+                  <p className="text-sm">{job.expiresAt ? job.expiresAt.slice(0, 10) : "Not set"}</p>
+                </div>
+              </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Work style</p>
-                    <p className="text-sm">{job.workStyle ?? "Not specified"}</p>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-6 sm:p-7">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Apply</p>
+                      <p className="text-xs text-muted-foreground">
+                        Submit a cover letter (optional). We’ll run an async fit analysis after submission.
+                      </p>
+                    </div>
+                    <Button
+                      disabled={applyDisabled || applying || Boolean(application)}
+                      onClick={handleApply}
+                      className="bg-indigo-600 hover:bg-indigo-500"
+                    >
+                      {application ? "Applied" : applying ? "Submitting…" : "Apply now"}
+                    </Button>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Employment type</p>
-                    <p className="text-sm">
-                      {job.employmentTypes.length ? job.employmentTypes.join(", ") : "Not specified"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Salary</p>
-                    <p className="text-sm">
-                      {job.salaryMin || job.salaryMax
-                        ? `${job.currency} ${job.salaryMin ?? "?"} – ${job.salaryMax ?? "?"}`
-                        : "Not specified"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">Expires</p>
-                    <p className="text-sm">{job.expiresAt ? job.expiresAt.slice(0, 10) : "Not set"}</p>
-                  </div>
+                  {!application ? (
+                    <Textarea
+                      value={coverLetter}
+                      onChange={(e) => setCoverLetter(e.target.value)}
+                      placeholder="Optional cover letter…"
+                      className="min-h-[120px] border-white/10 bg-background/50"
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Application id: <span className="font-mono">{application.id}</span>
+                      </p>
+                      <ApplicationAnalysisCard application={application} />
+                      <Button variant="outline" size="sm" asChild className="border-white/10 bg-white/5">
+                        <Link to="/candidate/applications">View all applications</Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
-
-                <div className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-                  Apply flow is Phase 4. For now, recruiters can publish jobs and candidates can browse.
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </PageShell>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </GlowingCard>
+    </PageContainer>
   );
 }
-

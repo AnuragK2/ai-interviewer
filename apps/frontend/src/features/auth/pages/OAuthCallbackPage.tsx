@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PageShell } from "@/shared/components/PageShell";
@@ -9,13 +9,17 @@ export function OAuthCallbackPage() {
   const { completeOAuthLogin, getDashboardPath } = useAuth();
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const handledRef = useRef(false);
 
   useEffect(() => {
+    if (handledRef.current) return;
+    handledRef.current = true;
+
     const error = searchParams.get("error");
     const token = searchParams.get("token");
 
     if (error) {
-      toast.error(`OAuth sign-in failed: ${error}`);
+      toast.error(`OAuth sign-in failed: ${decodeURIComponent(error)}`);
       setFailed(true);
       return;
     }

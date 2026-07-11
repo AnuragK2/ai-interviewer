@@ -188,10 +188,8 @@ async function findOrCreateUserFromOAuth(
     }
 
     if (linkedAccount.user.role !== role) {
-      throw new AuthError(
-        `This email is already registered as a ${linkedAccount.user.role.toLowerCase()}. Please use the correct role to sign in.`,
-        409,
-      );
+      // Existing account wins — avoids OAuth failing when the wrong role tab was used on login.
+      role = linkedAccount.user.role as UserRole;
     }
 
     if (role === "RECRUITER" && !linkedAccount.user.companyId) {
@@ -227,12 +225,7 @@ async function findOrCreateUserFromOAuth(
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
   if (existingUser) {
-    if (existingUser.role !== role) {
-      throw new AuthError(
-        `This email is already registered as a ${existingUser.role.toLowerCase()}. Please use the correct role to sign in.`,
-        409,
-      );
-    }
+    role = existingUser.role as UserRole;
 
     await prisma.oAuthAccount.create({
       data: {

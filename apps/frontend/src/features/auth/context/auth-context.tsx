@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const hydrateSession = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token) {
+    const tokenAtStart = getAccessToken();
+    if (!tokenAtStart) {
       setUser(null);
       setIsLoading(false);
       return;
@@ -41,16 +41,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const currentUser = await authApi.fetchCurrentUser();
+      if (getAccessToken() !== tokenAtStart) return;
       setUser(currentUser);
     } catch {
+      if (getAccessToken() !== tokenAtStart) return;
       clearAccessToken();
       setUser(null);
     } finally {
-      setIsLoading(false);
+      if (getAccessToken() === tokenAtStart || !getAccessToken()) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    // OAuth callback stores the token from the URL; hydrating here can race and clear it.
+    if (window.location.pathname === "/auth/callback") {
+      setIsLoading(false);
+      return;
+    }
+
     void hydrateSession();
   }, [hydrateSession]);
 
@@ -89,16 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persistAuth],
   );
 
-  const completeOAuthLogin = useCallback(
-    async (token: string) => {
-      setAccessToken(token);
+  const completeOAuthLogin = useCallback(async (token: string) => {
+    setAccessToken(token);
+    try {
       const currentUser = await authApi.fetchCurrentUser();
       setUser(currentUser);
       toast.success("Signed in successfully.");
       return currentUser;
-    },
-    [],
-  );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const logout = useCallback(() => {
     clearAccessToken();

@@ -16,7 +16,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PageShell } from "@/shared/components/PageShell";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as profileApi from "../services/profile-api";
 
@@ -36,7 +37,7 @@ const emptyEducation = (): EducationEntry => ({
 });
 
 export function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<CandidateProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,32 +155,17 @@ export function ProfilePage() {
 
   if (loading) {
     return (
-      <PageShell>
-        <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading profile…</div>
-      </PageShell>
+      <PageContainer>
+        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">Loading profile…</div>
+      </PageContainer>
     );
   }
 
   return (
-    <PageShell>
-      <div className="mx-auto max-w-4xl space-y-6 px-6 py-12">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-teal-400">Candidate profile</p>
-            <h1 className="text-3xl font-semibold">Your profile</h1>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
-              <Link to="/candidate/dashboard">Dashboard</Link>
-            </Button>
-            <Button variant="outline" onClick={logout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
+    <PageContainer>
+      <PageHeader eyebrow="Profile" title="Your profile" description={user?.email} />
 
-        <Card>
+      <Card>
           <CardHeader>
             <CardTitle>Completeness</CardTitle>
             <CardDescription>Fill more sections to improve your job match score in later phases.</CardDescription>
@@ -190,7 +176,7 @@ export function ProfilePage() {
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-teal-500 transition-all"
+                className="h-full bg-indigo-500 transition-all"
                 style={{ width: `${profile?.profileCompleteness ?? 0}%` }}
               />
             </div>
@@ -498,12 +484,11 @@ export function ProfilePage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end pb-8">
-          <Button onClick={() => void handleSave()} disabled={saving}>
+        <div className="flex justify-end pb-4">
+          <Button onClick={() => void handleSave()} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500">
             {saving ? "Saving…" : "Save profile"}
           </Button>
         </div>
-      </div>
-    </PageShell>
+    </PageContainer>
   );
 }

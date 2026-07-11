@@ -17,6 +17,10 @@ import { requireRecruiterAuth } from "../middleware/auth.middleware";
 
 export const jobsRouter = Router();
 
+function getRouteParam(value: string | string[] | undefined): string | null {
+  return typeof value === "string" ? value : null;
+}
+
 // Public browse endpoints (candidate portal uses these in Phase 3)
 jobsRouter.get("/", async (req, res) => {
   try {
@@ -34,7 +38,13 @@ jobsRouter.get("/", async (req, res) => {
 
 jobsRouter.get("/:id", async (req, res) => {
   try {
-    const job = await getJobPublic(req.params.id);
+    const jobId = getRouteParam(req.params.id);
+    if (!jobId) {
+      res.status(400).json({ error: "Invalid job id." });
+      return;
+    }
+
+    const job = await getJobPublic(jobId);
     res.json({ job });
   } catch (error) {
     handleJobRouteError(res, error);
@@ -63,8 +73,14 @@ jobsRouter.post("/", requireRecruiterAuth, async (req: AuthenticatedRequest, res
 
 jobsRouter.patch("/:id", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
   try {
+    const jobId = getRouteParam(req.params.id);
+    if (!jobId) {
+      res.status(400).json({ error: "Invalid job id." });
+      return;
+    }
+
     const body = UpdateJobRequestSchema.parse(req.body);
-    const job = await updateJob(req.params.id, body, { companyId: req.auth!.companyId! });
+    const job = await updateJob(jobId, body, { companyId: req.auth!.companyId! });
     res.json({ job });
   } catch (error) {
     handleJobRouteError(res, error);

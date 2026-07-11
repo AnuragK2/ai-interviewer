@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  ANALYZING
+  ANALYZED
+}
+
+model Application {
+  id              String            @id @default(uuid())
+  jobId           String
+  companyId       String
+  candidateUserId String
+
+  coverLetter     String?
+  status          ApplicationStatus @default(SUBMITTED)
+
+  /** Snapshots at the time of apply (for deterministic matching later). */
+  jobSnapshot       Json
+  candidateSnapshot Json
+
+  /** Matching output (Phase 4). */
+  fitScore      Int?
+  fitSummary    String?
+  strengths     String[] @default([])
+  concerns      String[] @default([])
+  analyzedAt    DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([companyId])
+  @@index([candidateUserId])
+  @@unique([jobId, candidateUserId])
+}
+

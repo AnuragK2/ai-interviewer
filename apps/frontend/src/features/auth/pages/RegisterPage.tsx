@@ -2,11 +2,12 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
+import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PageShell } from "@/shared/components/PageShell";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { OAuthButtons } from "../components/OAuthButtons";
 import { useAuth } from "../context/auth-context";
 
@@ -46,10 +47,9 @@ export function RegisterPage() {
   }
 
   return (
-    <PageShell>
-      <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-        <Card>
-          <CardHeader>
+    <PageContainer size="md" className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+      <GlowingCard className="w-full max-w-md">
+        <CardHeader>
             <CardTitle>{isRecruiter ? "Create company workspace" : "Create candidate account"}</CardTitle>
             <CardDescription>
               {isRecruiter
@@ -61,7 +61,7 @@ export function RegisterPage() {
             <OAuthButtons role={role} />
 
             <div className="relative text-center text-xs uppercase tracking-wide text-muted-foreground">
-              <span className="bg-card relative z-10 px-2">or email</span>
+              <span className="relative z-10 bg-card/80 px-2">or email</span>
               <div className="absolute inset-x-0 top-1/2 border-t border-border" />
             </div>
 
@@ -117,7 +117,7 @@ export function RegisterPage() {
                 </>
               ) : null}
 
-              <Button type="submit" className="w-full" disabled={submitting}>
+              <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500" disabled={submitting}>
                 {submitting ? "Creating account…" : "Create account"}
               </Button>
             </form>
@@ -126,14 +126,13 @@ export function RegisterPage() {
               Already registered?{" "}
               <Link
                 to={`/login?role=${isRecruiter ? "recruiter" : "candidate"}`}
-                className="text-teal-400 underline-offset-4 hover:underline"
+                className="text-indigo-300 underline-offset-4 hover:underline"
               >
                 Sign in
               </Link>
             </p>
-          </CardContent>
-        </Card>
-      </div>
-    </PageShell>
+        </CardContent>
+      </GlowingCard>
+    </PageContainer>
   );
 }
