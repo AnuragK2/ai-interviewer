@@ -1,5 +1,6 @@
 import {
   CreateJobRequestSchema,
+  GenerateJobDescriptionRequestSchema,
   UpdateJobRequestSchema,
   type JobStatus,
 } from "@ai-interviewer/api-types";
@@ -12,6 +13,7 @@ import {
   listJobsPublic,
   updateJob,
 } from "../../../application/jobs/job.service";
+import { generateJobDescription } from "../../../application/jobs/job-description-generator.service";
 import { listRecommendedJobsForCandidate } from "../../../application/jobs/job-recommendations.service";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { requireCandidateAuth } from "../middleware/candidate-auth.middleware";
@@ -73,10 +75,20 @@ jobsRouter.get("/_recruiter/mine", requireRecruiterAuth, async (req: Authenticat
   }
 });
 
+jobsRouter.post("/_recruiter/generate-description", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const body = GenerateJobDescriptionRequestSchema.parse(req.body);
+    const generated = await generateJobDescription(body);
+    res.json(generated);
+  } catch (error) {
+    handleJobRouteError(res, error);
+  }
+});
+
 jobsRouter.post("/", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const body = CreateJobRequestSchema.parse(req.body);
-    const job = await createJob(body, { userId: req.auth!.sub, companyId: req.auth!.companyId! });
+    const job = await createJob(body, { userId: req.auth!.sub, companyId: req.auth!.companyId!, email: req.auth!.email });
     res.status(201).json({ job });
   } catch (error) {
     handleJobRouteError(res, error);
@@ -92,7 +104,11 @@ jobsRouter.patch("/:id", requireRecruiterAuth, async (req: AuthenticatedRequest,
     }
 
     const body = UpdateJobRequestSchema.parse(req.body);
-    const job = await updateJob(jobId, body, { companyId: req.auth!.companyId! });
+    const job = await updateJob(jobId, body, {
+      companyId: req.auth!.companyId!,
+      userId: req.auth!.sub,
+      email: req.auth!.email,
+    });
     res.json({ job });
   } catch (error) {
     handleJobRouteError(res, error);

@@ -11,6 +11,7 @@ import {
   listRecruiterApplicationsForJob,
   markInterviewPending,
 } from "../../../application/applications/application.service";
+import { listTenantAuditLogs } from "../../../application/audit/audit.service";
 import {
   getCandidateDashboard,
   getRecruiterDashboard,
@@ -132,6 +133,21 @@ applicationsRouter.get(
   },
 );
 
+applicationsRouter.get(
+  "/_recruiter/audit-logs",
+  requireRecruiterAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : 50;
+      const logs = await listTenantAuditLogs(req.auth!.companyId!, Number.isFinite(limit) ? limit : 50);
+      res.json(logs);
+    } catch (error) {
+      console.error("[audit-logs]", error);
+      res.status(500).json({ error: "Failed to load audit logs." });
+    }
+  },
+);
+
 applicationsRouter.get("/_recruiter/:id", requireRecruiterAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const applicationId = getRouteParam(req.params.id);
@@ -140,7 +156,11 @@ applicationsRouter.get("/_recruiter/:id", requireRecruiterAuth, async (req: Auth
       return;
     }
 
-    const result = await getRecruiterApplicationPacket(applicationId, { companyId: req.auth!.companyId! });
+    const result = await getRecruiterApplicationPacket(applicationId, {
+      companyId: req.auth!.companyId!,
+      actorUserId: req.auth!.sub,
+      actorEmail: req.auth!.email,
+    });
     res.json(result);
   } catch (error) {
     handleApplicationsRouteError(res, error);
@@ -155,7 +175,11 @@ applicationsRouter.post("/_recruiter/:id/invite", requireRecruiterAuth, async (r
       return;
     }
 
-    const application = await inviteToInterview(applicationId, { companyId: req.auth!.companyId! });
+    const application = await inviteToInterview(applicationId, {
+      companyId: req.auth!.companyId!,
+      actorUserId: req.auth!.sub,
+      actorEmail: req.auth!.email,
+    });
     res.status(201).json({ application });
   } catch (error) {
     handleApplicationsRouteError(res, error);

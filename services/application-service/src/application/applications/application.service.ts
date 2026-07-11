@@ -9,6 +9,7 @@ import type {
 } from "@ai-interviewer/api-types";
 import { canStartInterview, createApplicationInvitedEvent, createPlatformEvent, EventSubjects } from "@ai-interviewer/api-types";
 import { getEventBus } from "@ai-interviewer/event-bus";
+import { recordTenantAudit } from "../audit/audit.service";
 import { prisma } from "../../infrastructure/db/prisma.client";
 import { env } from "../../config/env";
 
@@ -209,7 +210,7 @@ export async function listRecruiterApplicationsForJob(
 
 export async function getRecruiterApplicationPacket(
   applicationId: string,
-  ctx: { companyId: string },
+  ctx: { companyId: string; actorUserId: string; actorEmail?: string },
 ): Promise<{ application: ApplicationResponse; jobSnapshot: unknown; candidateSnapshot: unknown }> {
   const app = await prisma.application.findUnique({
     where: { id: applicationId },
@@ -218,6 +219,16 @@ export async function getRecruiterApplicationPacket(
   if (!app || app.companyId !== ctx.companyId) {
     throw new ApplicationError("Application not found.", 404);
   }
+
+  void recordTenantAudit({
+    companyId: ctx.companyId,
+    actorUserId: ctx.actorUserId,
+    actorEmail: ctx.actorEmail ?? null,
+    action: "application.packet.view",
+    resourceType: "application",
+    resourceId: applicationId,
+    metadata: { jobId: app.jobId, status: app.status },
+  }).catch((error) => console.error("[audit] packet view failed:", error));
 
   return {
     application: toApplicationResponse(app, app.candidateSnapshot),
@@ -282,7 +293,7 @@ export async function getInterviewAccess(
 
 export async function inviteToInterview(
   applicationId: string,
-  ctx: { companyId: string },
+  ctx: { companyId: string; actorUserId: string; actorEmail?: string },
 ): Promise<ApplicationResponse> {
   const app = await prisma.application.findUnique({ where: { id: applicationId } });
   if (!app || app.companyId !== ctx.companyId) {
@@ -334,6 +345,16 @@ export async function inviteToInterview(
       candidateUserId: updated.candidateUserId,
     }),
   );
+
+  void recordTenantAudit({
+    companyId: ctx.companyId,
+    actorUserId: ctx.actorUserId,
+    actorEmail: ctx.actorEmail ?? null,
+    action: "application.invite",
+    resourceType: "application",
+    resourceId: updated.id,
+    metadata: { interviewId: updated.interviewId, jobId: updated.jobId },
+  }).catch((error) => console.error("[audit] invite failed:", error));
 
   return toApplicationResponse(updated, updated.candidateSnapshot);
 }

@@ -6,6 +6,7 @@ import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MatchScoreBadge } from "@/features/jobs/components/MatchScoreBadge";
+import { getApplicationStatusLabel } from "@/features/applications/lib/application-status-labels";
 import * as applicationApi from "@/features/applications/services/application-api";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -90,7 +91,7 @@ export function CandidateDashboardPage() {
                       <div>
                         <p className="font-medium">{application.jobTitle ?? "Role"}</p>
                         <p className="text-xs text-muted-foreground">
-                          {application.status} · Updated {application.updatedAt.slice(0, 10)}
+                          {getApplicationStatusLabel(application.status)} · Updated {application.updatedAt.slice(0, 10)}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -150,7 +151,9 @@ export function CandidateDashboardPage() {
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {dashboard.applicationsByStatus.map((item) => (
                     <div key={item.status} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">{item.status}</p>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        {getApplicationStatusLabel(item.status)}
+                      </p>
                       <p className="mt-2 text-xl font-semibold">{item.count}</p>
                     </div>
                   ))}

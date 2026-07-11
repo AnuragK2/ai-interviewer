@@ -6,6 +6,7 @@ import type {
   UpdateJobRequest,
 } from "@ai-interviewer/api-types";
 import { prisma } from "../../infrastructure/db/prisma.client";
+import { recordRemoteTenantAudit } from "../../infrastructure/audit/audit-client";
 
 export class JobError extends Error {
   constructor(
@@ -64,7 +65,7 @@ function toJobResponse(row: {
 
 export async function createJob(
   input: CreateJobRequest,
-  actor: { userId: string; companyId: string },
+  actor: { userId: string; companyId: string; email?: string },
 ): Promise<JobResponse> {
   const created = await prisma.job.create({
     data: {
@@ -85,13 +86,23 @@ export async function createJob(
     },
   });
 
+  void recordRemoteTenantAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    actorEmail: actor.email ?? null,
+    action: "job.create",
+    resourceType: "job",
+    resourceId: created.id,
+    metadata: { title: created.title, status: created.status },
+  });
+
   return toJobResponse(created);
 }
 
 export async function updateJob(
   jobId: string,
   input: UpdateJobRequest,
-  actor: { companyId: string },
+  actor: { companyId: string; userId: string; email?: string },
 ): Promise<JobResponse> {
   const existing = await prisma.job.findUnique({ where: { id: jobId } });
   if (!existing || existing.companyId !== actor.companyId) {
@@ -114,6 +125,16 @@ export async function updateJob(
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt ? new Date(input.expiresAt) : null } : {}),
     },
+  });
+
+  void recordRemoteTenantAudit({
+    companyId: actor.companyId,
+    actorUserId: actor.userId,
+    actorEmail: actor.email ?? null,
+    action: "job.update",
+    resourceType: "job",
+    resourceId: updated.id,
+    metadata: { title: updated.title, status: updated.status },
   });
 
   return toJobResponse(updated);

@@ -9,4 +9,6 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/Application.ts'
+export type * from './models/ProcessedEvent.ts'
+export type * from './models/TenantAuditLog.ts'
 export type * from './commonInputTypes.ts'

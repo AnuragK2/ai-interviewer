@@ -19,3 +19,14 @@ model Notification {
 
   @@index([userId, createdAt])
 }
+
+model ProcessedEvent {
+  id           String   @id @default(uuid())
+  consumerName String
+  eventId      String
+  subject      String
+  processedAt  DateTime @default(now())
+
+  @@unique([consumerName, eventId])
+  @@index([processedAt])
+}

@@ -6,11 +6,12 @@ import {
   getResumeDownload,
   ProfileError,
   updateMyProfile,
+  uploadProfilePhoto,
   uploadResume,
 } from "../../../application/profile/profile.service";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { requireCandidateAuth } from "../middleware/auth.middleware";
-import { resumeUpload } from "../middleware/upload.middleware";
+import { photoUpload, resumeUpload } from "../middleware/upload.middleware";
 
 export const profileRouter = Router();
 
@@ -57,6 +58,25 @@ profileRouter.post("/me/resume", resumeUpload.single("resume"), async (req: Auth
       },
       manualFields,
     );
+
+    res.json({ profile });
+  } catch (error) {
+    handleProfileError(res, error);
+  }
+});
+
+profileRouter.post("/me/photo", photoUpload.single("photo"), async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "Profile photo is required." });
+      return;
+    }
+
+    const profile = await uploadProfilePhoto(req.auth!.sub, req.auth!.email, {
+      buffer: req.file.buffer,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+    });
 
     res.json({ profile });
   } catch (error) {

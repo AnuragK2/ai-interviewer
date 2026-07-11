@@ -22,6 +22,7 @@ import { RecruiterApplicationPacketPage } from "@/features/recruiter/pages/Appli
 import { RecruiterJobApplicantsPage } from "@/features/recruiter/pages/JobApplicantsPage";
 import { RecruiterJobEditPage } from "@/features/recruiter/pages/JobEditPage";
 import { RecruiterJobsListPage } from "@/features/recruiter/pages/JobsListPage";
+import { PublicJobDetailPage } from "@/features/jobs/pages/PublicJobDetailPage";
 import { CandidateLayout } from "@/shared/components/layout/CandidateLayout";
 import { PublicLayout } from "@/shared/components/layout/PublicLayout";
 import { RecruiterLayout } from "@/shared/components/layout/RecruiterLayout";
@@ -36,6 +37,7 @@ export function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/jobs/:id" element={<PublicJobDetailPage />} />
             </Route>
 
             <Route path="/auth/callback" element={<OAuthCallbackPage />} />

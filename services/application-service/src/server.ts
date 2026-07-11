@@ -1,10 +1,14 @@
 import http from "node:http";
+import { createTracingMiddleware, initObservability } from "@ai-interviewer/observability";
 import { createHttpApp } from "./api/http/app";
 import { startApplicationEventWorker } from "./application/events/application-events.worker";
 import { env } from "./config/env";
 
+initObservability(env.serviceName);
+
 export async function startServer() {
   const app = createHttpApp();
+  app.use(createTracingMiddleware(env.serviceName));
   const server = http.createServer(app);
 
   await startApplicationEventWorker();

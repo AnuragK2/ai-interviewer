@@ -1,13 +1,28 @@
 import { connect, JSONCodec, type NatsConnection, type Subscription } from "nats";
 import type { PlatformEvent } from "@ai-interviewer/api-types";
+import {
+  buildDeadLetterEvent,
+  type DeadLetterEvent,
+  type IdempotencyStore,
+} from "./idempotency";
+
+export type { DeadLetterEvent, IdempotencyStore } from "./idempotency";
+export { createMemoryIdempotencyStore, createPrismaIdempotencyStore, buildDeadLetterEvent } from "./idempotency";
 
 export type EventBusOptions = {
   servers?: string;
   name?: string;
 };
 
+export type SubscribeOptions = {
+  consumerName: string;
+  idempotency?: IdempotencyStore;
+  deadLetterSubject?: string;
+};
+
 export class EventBus {
   private readonly codec = JSONCodec<PlatformEvent>();
+  private readonly deadLetterCodec = JSONCodec<DeadLetterEvent>();
   private subscriptions: Subscription[] = [];
 
   private constructor(private readonly nc: NatsConnection) {}
@@ -22,20 +37,47 @@ export class EventBus {
     this.nc.publish(subject, this.codec.encode(event));
   }
 
+  async publishDeadLetter(subject: string, event: DeadLetterEvent) {
+    this.nc.publish(subject, this.deadLetterCodec.encode(event));
+  }
+
   async subscribe<T extends PlatformEvent>(
     subject: string,
     handler: (event: T) => void | Promise<void>,
+    options?: SubscribeOptions,
   ) {
     const sub = this.nc.subscribe(subject);
     this.subscriptions.push(sub);
 
     void (async () => {
       for await (const msg of sub) {
+        let event: T | null = null;
         try {
-          const event = this.codec.decode(msg.data) as T;
+          event = this.codec.decode(msg.data) as T;
+
+          if (options?.idempotency && (await options.idempotency.hasProcessed(event.eventId))) {
+            console.log(`[event-bus] skip duplicate event ${event.eventId} (${options.consumerName})`);
+            continue;
+          }
+
           await handler(event);
+
+          if (options?.idempotency) {
+            await options.idempotency.markProcessed(event.eventId, subject);
+          }
         } catch (error) {
           console.error(`[event-bus] handler error on ${subject}:`, error);
+
+          if (event) {
+            const dlqSubject = options?.deadLetterSubject ?? `${subject}.dlq`;
+            const deadLetter = buildDeadLetterEvent({ subject, event, error });
+            try {
+              await this.publishDeadLetter(dlqSubject, deadLetter);
+              console.error(`[event-bus] published dead letter to ${dlqSubject} for ${event.eventId}`);
+            } catch (publishError) {
+              console.error(`[event-bus] failed to publish dead letter for ${event.eventId}:`, publishError);
+            }
+          }
         }
       }
     })();

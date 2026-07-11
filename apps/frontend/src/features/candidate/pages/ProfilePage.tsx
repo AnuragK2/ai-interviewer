@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { ProfilePhotoUpload } from "@/features/candidate/components/ProfilePhotoUpload";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as profileApi from "../services/profile-api";
 
@@ -43,6 +44,7 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [enrichingGithub, setEnrichingGithub] = useState(false);
 
   const [name, setName] = useState("");
@@ -125,6 +127,19 @@ export function ProfilePage() {
     }
   }
 
+  async function handlePhotoUpload(file: File) {
+    setUploadingPhoto(true);
+    try {
+      const updated = await profileApi.uploadProfilePhoto(file);
+      applyProfile(updated);
+      toast.success("Profile photo updated.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Photo upload failed.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
   async function handleDownloadResume() {
     try {
       const { url } = await profileApi.getResumeDownloadUrl();
@@ -186,15 +201,25 @@ export function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Identity</CardTitle>
+            <CardDescription>Add a profile photo and your basic contact details.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <CardContent className="space-y-6">
+            <ProfilePhotoUpload
+              photoUrl={profile?.photoUrl ?? null}
+              fallbackPhotoUrl={user?.avatarUrl}
+              displayName={name || user?.name}
+              uploading={uploadingPhoto}
+              onSelectFile={(file) => void handlePhotoUpload(file)}
+            />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
             </div>
           </CardContent>
         </Card>

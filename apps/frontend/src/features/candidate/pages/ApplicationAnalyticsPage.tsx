@@ -6,6 +6,8 @@ import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { ApplicationAnalysisCard } from "@/features/applications/components/ApplicationAnalysisCard";
 import { ApplicationPipeline } from "@/features/applications/components/ApplicationPipeline";
+import { ApplicationStatusBadge } from "@/features/applications/components/ApplicationStatusBadge";
+import { getApplicationStatusLabel } from "@/features/applications/lib/application-status-labels";
 import { PostInterviewFeedbackCard } from "@/features/applications/components/PostInterviewFeedbackCard";
 import * as interviewApi from "@/features/interview/services/interview-api";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
@@ -130,7 +132,9 @@ export function CandidateApplicationAnalyticsPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium">Pipeline</p>
-                  <p className="text-xs text-muted-foreground">Current status: {detail.application.status}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Current status: {getApplicationStatusLabel(detail.application.status)}
+                  </p>
                 </div>
                 <Button
                   disabled={!canStart || starting}
@@ -155,7 +159,7 @@ export function CandidateApplicationAnalyticsPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Status</p>
-                  <p className="text-sm">{detail.application.status}</p>
+                  <ApplicationStatusBadge status={detail.application.status} />
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Invited at</p>

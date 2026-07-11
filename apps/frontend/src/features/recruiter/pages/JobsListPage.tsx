@@ -9,6 +9,7 @@ import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as jobApi from "@/features/jobs/services/job-api";
+import { getJobStatusLabel } from "@/features/jobs/lib/job-status-labels";
 
 export function RecruiterJobsListPage() {
   const { user } = useAuth();
@@ -56,7 +57,7 @@ export function RecruiterJobsListPage() {
                   <div className="min-w-48">
                     <p className="font-medium">{job.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {job.status}
+                      {getJobStatusLabel(job.status)}
                       {job.isExpired ? " · expired" : ""}
                     </p>
                   </div>

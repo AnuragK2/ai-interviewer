@@ -1,7 +1,14 @@
-import type { RecommendedJobsResponse } from "@ai-interviewer/api-types";
+import type {
+  CreateJobRequest,
+  GenerateJobDescriptionRequest,
+  GenerateJobDescriptionResponse,
+  JobResponse,
+  ListJobsResponse,
+  RecommendedJobsResponse,
+  UpdateJobRequest,
+} from "@ai-interviewer/api-types";
 import { BACKEND_URL } from "@/shared/api/config";
 import { getAccessToken } from "@/shared/lib/auth-storage";
-import type { CreateJobRequest, JobResponse, ListJobsResponse, UpdateJobRequest } from "@ai-interviewer/api-types";
 
 async function jobFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAccessToken();
@@ -58,4 +65,13 @@ export async function updateJob(jobId: string, input: UpdateJobRequest): Promise
     body: JSON.stringify(input),
   });
   return data.job;
+}
+
+export async function generateJobDescription(
+  input: GenerateJobDescriptionRequest,
+): Promise<GenerateJobDescriptionResponse> {
+  return jobFetch<GenerateJobDescriptionResponse>("/api/v1/jobs/_recruiter/generate-description", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

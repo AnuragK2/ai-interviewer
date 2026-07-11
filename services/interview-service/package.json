@@ -24,6 +24,7 @@
   "dependencies": {
     "@ai-interviewer/api-types": "workspace:*",
     "@ai-interviewer/event-bus": "workspace:*",
+    "@ai-interviewer/file-security": "workspace:*",
     "@ai-interviewer/object-storage": "workspace:*",
     "@ai-interviewer/resume-parser": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",

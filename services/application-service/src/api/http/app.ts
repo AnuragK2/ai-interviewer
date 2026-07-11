@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { applicationsRouter } from "./routes/applications.routes";
+import { internalRouter } from "./routes/audit.routes";
 
 export function createHttpApp() {
   const app = express();
@@ -12,6 +13,7 @@ export function createHttpApp() {
     res.json({ status: "ok", service: "application-service" });
   });
 
+  app.use("/api/v1/internal", internalRouter);
   app.use("/api/v1/applications", applicationsRouter);
 
   return app;

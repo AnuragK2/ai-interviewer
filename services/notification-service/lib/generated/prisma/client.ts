@@ -46,3 +46,8 @@ export { Prisma }
  * 
  */
 export type Notification = Prisma.NotificationModel
+/**
+ * Model ProcessedEvent
+ * 
+ */
+export type ProcessedEvent = Prisma.ProcessedEventModel

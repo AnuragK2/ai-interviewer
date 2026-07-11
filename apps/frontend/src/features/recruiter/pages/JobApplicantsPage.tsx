@@ -4,23 +4,13 @@ import { toast } from "sonner";
 import type { ApplicationResponse, JobResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
+import { ApplicationStatusBadge } from "@/features/applications/components/ApplicationStatusBadge";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as applicationApi from "@/features/applications/services/application-api";
 import * as jobApi from "@/features/jobs/services/job-api";
-
-function statusBadgeClasses(status: ApplicationResponse["status"]) {
-  switch (status) {
-    case "ANALYZED":
-      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
-    case "ANALYZING":
-      return "border-indigo-500/30 bg-indigo-500/10 text-indigo-200";
-    default:
-      return "border-border bg-muted/20 text-muted-foreground";
-  }
-}
 
 export function RecruiterJobApplicantsPage() {
   const { user } = useAuth();
@@ -73,9 +63,7 @@ export function RecruiterJobApplicantsPage() {
               >
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`rounded-full border px-3 py-1 text-xs ${statusBadgeClasses(app.status)}`}>
-                      {app.status}
-                    </span>
+                    <ApplicationStatusBadge status={app.status} />
                     <span className="text-xs text-muted-foreground">
                       Applied {app.createdAt.slice(0, 10)}
                     </span>

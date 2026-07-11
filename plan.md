@@ -639,11 +639,13 @@ MVP: email via Resend/SendGrid; in-app via notification table + polling.
 
 ### Phase 8 — Hardening & production
 
-- [ ] OpenTelemetry tracing across services
-- [ ] Idempotent event consumers + DLQ
-- [ ] E2E tests for critical flows
-- [ ] Rate limiting, file scan on upload
-- [ ] Tenant audit log for recruiter actions
+- [x] OpenTelemetry tracing across services
+- [x] Idempotent event consumers + DLQ
+- [x] E2E tests for critical flows
+- [x] Rate limiting, file scan on upload
+- [x] Tenant audit log for recruiter actions
+
+**Runbook:** See [`docs/PHASE8.md`](./docs/PHASE8.md).
 
 ---
 

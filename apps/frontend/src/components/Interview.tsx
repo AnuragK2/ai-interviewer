@@ -10,6 +10,8 @@ import type { PreInterviewResponse } from "@/shared/api/types";
 import { useInterviewRecording } from "@/features/interview/hooks/use-interview-recording";
 import { captureVideoFrame } from "@/features/interview/lib/capture-video-frame";
 import * as interviewApi from "@/features/interview/services/interview-api";
+import { InterviewFlowShell } from "@/features/interview/components/InterviewFlowShell";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
 import {
   connectRealtimeInterview,
   type BackendInterviewEvent,
@@ -339,7 +341,15 @@ export function Interview() {
   }, [checksPassed, connectionStatus]);
 
   if (!id || !accessChecked) {
-    return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Checking interview access…</div>;
+    return (
+      <InterviewFlowShell>
+        <PageContainer>
+          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
+            Checking interview access…
+          </div>
+        </PageContainer>
+      </InterviewFlowShell>
+    );
   }
 
   if (!profile || !accessGranted) {

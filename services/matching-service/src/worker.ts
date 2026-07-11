@@ -1,8 +1,10 @@
 import { EventSubjects, createPlatformEvent, type ApplicationCreatedEvent } from "@ai-interviewer/api-types";
-import { closeEventBus, getEventBus } from "@ai-interviewer/event-bus";
+import { closeEventBus, createPrismaIdempotencyStore, getEventBus } from "@ai-interviewer/event-bus";
 import { prisma } from "./infrastructure/db/prisma.client";
 import { env } from "./config/env";
 import { analyzeFit } from "./application/matching/match-analyzer";
+
+const CONSUMER_NAME = `${env.serviceName}-application-created`;
 
 async function analyzeApplication(applicationId: string) {
   const app = await prisma.application.findUnique({ where: { id: applicationId } });
@@ -64,17 +66,19 @@ async function catchUpPendingApplications() {
 
 export async function startWorker() {
   const bus = await getEventBus({ servers: env.natsUrl, name: env.serviceName });
-  await bus.subscribe<ApplicationCreatedEvent>(EventSubjects.APPLICATION_CREATED, async (event) => {
-    try {
+  const idempotency = createPrismaIdempotencyStore(prisma, CONSUMER_NAME);
+
+  await bus.subscribe<ApplicationCreatedEvent>(
+    EventSubjects.APPLICATION_CREATED,
+    async (event) => {
       await analyzeApplication(event.applicationId);
-    } catch (error) {
-      console.error(`[matching-service] handler failed for ${event.applicationId}:`, error);
-    }
-  });
+    },
+    { consumerName: CONSUMER_NAME, idempotency },
+  );
 
   await catchUpPendingApplications();
 
-  console.log(`${env.serviceName} subscribed to ${EventSubjects.APPLICATION_CREATED}`);
+  console.log(`${env.serviceName} subscribed to ${EventSubjects.APPLICATION_CREATED} (idempotent)`);
 
   const shutdown = async () => {
     await closeEventBus();
@@ -85,4 +89,3 @@ export async function startWorker() {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 }
-

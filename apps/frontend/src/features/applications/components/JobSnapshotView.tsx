@@ -1,5 +1,6 @@
 import type { JobResponse } from "@ai-interviewer/api-types";
 import { formatSalaryRange, parseJobSnapshot } from "@/features/applications/lib/parse-snapshot";
+import { getJobStatusLabel } from "@/features/jobs/lib/job-status-labels";
 
 type JobSnapshotViewProps = {
   snapshot: unknown;
@@ -53,8 +54,8 @@ export function JobSnapshotView({ snapshot }: JobSnapshotViewProps) {
             {typedJob.location ? <p className="text-sm text-muted-foreground">{typedJob.location}</p> : null}
           </div>
           {typedJob.status ? (
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
-              {typedJob.status}
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs tracking-wide text-muted-foreground">
+              {getJobStatusLabel(typedJob.status)}
               {typedJob.isExpired ? " · expired" : ""}
             </span>
           ) : null}

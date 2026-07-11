@@ -8,7 +8,7 @@
     "start": "bun index.ts",
     "check-types": "tsc --noEmit",
     "test": "bun test",
-    "db:migrate": "bunx prisma migrate dev",
+    "db:migrate": "echo 'matching-service shares the applications DB — run migrations in services/application-service' && exit 1",
     "db:generate": "bunx prisma generate"
   },
   "devDependencies": {

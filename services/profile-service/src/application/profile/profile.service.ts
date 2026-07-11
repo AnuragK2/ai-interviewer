@@ -4,12 +4,18 @@ import type {
   UpdateCandidateProfileRequest,
 } from "@ai-interviewer/api-types";
 import { isAllowedResumeFile, parseResumeFile } from "@ai-interviewer/resume-parser";
+import { scanUploadBuffer } from "@ai-interviewer/file-security";
 import { prisma } from "../../infrastructure/db/prisma.client";
 import {
   fetchGithubRepos,
   parseGithubUsername,
   toGithubRepoSummary,
 } from "../../infrastructure/github/github.client";
+import {
+  deleteProfilePhoto,
+  getProfilePhotoUrl,
+  storeProfilePhoto,
+} from "../../infrastructure/storage/photo.storage";
 import {
   deleteResumeFile,
   getResumeDownloadUrl,
@@ -53,10 +59,29 @@ function jsonFieldsFromUpdate(input: UpdateCandidateProfileRequest) {
   };
 }
 
+async function buildProfileResponse(
+  row: Parameters<typeof toCandidateProfileResponse>[0],
+  email: string,
+): Promise<CandidateProfileResponse> {
+  const response = toCandidateProfileResponse(row, email);
+
+  if (row.photoObjectKey) {
+    try {
+      return { ...response, photoUrl: await getProfilePhotoUrl(row.photoObjectKey) };
+    } catch {
+      return response;
+    }
+  }
+
+  return response;
+}
+
 async function saveWithCompleteness(
   userId: string,
   email: string,
   data: ReturnType<typeof jsonFieldsFromUpdate> & {
+    photoObjectKey?: string | null;
+    photoMimeType?: string | null;
     resumeObjectKey?: string | null;
     resumeFileName?: string | null;
     resumeMimeType?: string | null;
@@ -77,6 +102,7 @@ async function saveWithCompleteness(
     preferences: (merged.preferences as CandidateProfileResponse["preferences"]) ?? {},
     links: (merged.links as CandidateProfileResponse["links"]) ?? {},
     resumeObjectKey: merged.resumeObjectKey ?? null,
+    photoObjectKey: merged.photoObjectKey ?? null,
   });
 
   const updated = await prisma.candidateProfile.update({
@@ -87,12 +113,12 @@ async function saveWithCompleteness(
     },
   });
 
-  return toCandidateProfileResponse(updated, email);
+  return buildProfileResponse(updated, email);
 }
 
 export async function getMyProfile(userId: string, email: string): Promise<CandidateProfileResponse> {
   const profile = await getOrCreateProfile(userId);
-  return toCandidateProfileResponse(profile, email);
+  return buildProfileResponse(profile, email);
 }
 
 export async function updateMyProfile(
@@ -112,6 +138,20 @@ export async function uploadResume(
 ): Promise<CandidateProfileResponse> {
   if (!isAllowedResumeFile(file.mimetype, file.originalname)) {
     throw new ProfileError("Unsupported resume format. Upload PDF, DOCX, or TXT.");
+  }
+
+  const scan = scanUploadBuffer({
+    buffer: file.buffer,
+    mimeType: file.mimetype,
+    fileName: file.originalname,
+    allowedMimeTypes: [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+    ],
+  });
+  if (!scan.ok) {
+    throw new ProfileError(scan.reason, 400);
   }
 
   const parsed = await parseResumeFile(file.buffer, file.mimetype, file.originalname);
@@ -174,4 +214,57 @@ export async function enrichGithubProfile(userId: string, email: string): Promis
   };
 
   return saveWithCompleteness(userId, email, { githubMeta });
+}
+
+const ALLOWED_PHOTO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function isAllowedProfilePhoto(mimeType: string, fileName: string) {
+  const lowerName = fileName.toLowerCase();
+  if (!ALLOWED_PHOTO_MIME_TYPES.includes(mimeType)) return false;
+  return lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".png") || lowerName.endsWith(".webp");
+}
+
+export async function uploadProfilePhoto(
+  userId: string,
+  email: string,
+  file: { buffer: Buffer; originalname: string; mimetype: string },
+): Promise<CandidateProfileResponse> {
+  if (!isAllowedProfilePhoto(file.mimetype, file.originalname)) {
+    throw new ProfileError("Unsupported photo format. Upload JPG, PNG, or WEBP.");
+  }
+
+  const scan = scanUploadBuffer({
+    buffer: file.buffer,
+    mimeType: file.mimetype,
+    fileName: file.originalname,
+    allowedMimeTypes: ALLOWED_PHOTO_MIME_TYPES,
+  });
+  if (!scan.ok) {
+    throw new ProfileError(scan.reason, 400);
+  }
+
+  const profile = await getOrCreateProfile(userId);
+  if (profile.photoObjectKey) {
+    try {
+      await deleteProfilePhoto(profile.photoObjectKey);
+    } catch {
+      // MinIO optional in local dev
+    }
+  }
+
+  let objectKey: string | null = null;
+  try {
+    objectKey = await storeProfilePhoto(userId, file.originalname, file.buffer, file.mimetype);
+  } catch (error) {
+    throw new ProfileError(
+      `Photo storage unavailable: ${error instanceof Error ? error.message : "unknown error"}`,
+      503,
+    );
+  }
+
+  return saveWithCompleteness(userId, email, {
+    photoObjectKey: objectKey,
+    photoMimeType: file.mimetype,
+    photoUrl: null,
+  });
 }

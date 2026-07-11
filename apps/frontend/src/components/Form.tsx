@@ -1,7 +1,10 @@
-import { Input } from "@/components/ui/input";
+import type { ReactNode } from "react";
+import { Link } from "react-router";
+import { toast } from "sonner";
+import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Modal,
   ModalBody,
@@ -13,18 +16,27 @@ import {
 } from "@/components/ui/modal";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { toast } from "sonner";
 import { BACKEND_URL } from "@/shared/api/config";
 import { INTERVIEW_DISCLAIMERS } from "@/features/pre-interview/constants/disclaimer";
 import { saveInterviewSession } from "@/shared/lib/interview-session";
 import axios from "axios";
 import type { PreInterviewResponse } from "@/shared/api/types";
 import { cn } from "@/shared/lib/utils";
-import { ArrowLeft, ArrowRight, Code2, FileText, Loader2, ShieldAlert, Sparkles, Upload, X } from "lucide-react";
-import { PageShell } from "@/shared/components/PageShell";
+import { ArrowLeft, ArrowRight, Code2, FileText, Loader2, ShieldAlert, Upload, X } from "lucide-react";
+import {
+  InterviewFlowShell,
+  interviewOutlineButtonClass,
+  interviewPrimaryButtonClass,
+  interviewAccentIconClass,
+  interviewSurfaceClass,
+} from "@/features/interview/components/InterviewFlowShell";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { useAuth } from "@/features/auth/context/auth-context";
 
 export function Form() {
   const navigate = useNavigate();
+  const { getDashboardPath, user } = useAuth();
   const [githubUrl, setGithubUrl] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +89,7 @@ export function Form() {
   const candidateName = parsedProfile?.resume.name ?? parsedProfile?.github.username;
 
   return (
-    <PageShell>
+    <InterviewFlowShell>
       <Modal open={showDisclaimer} onOpenChange={(isOpen: boolean) => !isOpen && setShowDisclaimer(false)}>
         <ModalContent aria-describedby="disclaimer-description">
           <ModalHeader>
@@ -87,7 +99,7 @@ export function Form() {
             </ModalDescription>
           </ModalHeader>
 
-          <ModalBody className="space-y-3 rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <ModalBody className={cn("space-y-3 rounded-xl p-4", interviewSurfaceClass)}>
             <div className="flex items-center gap-2 text-sm font-medium">
               <ShieldAlert className="h-4 w-4 text-amber-300" />
               Please read carefully
@@ -95,7 +107,7 @@ export function Form() {
             <ul className="space-y-2.5 text-sm leading-relaxed text-muted-foreground">
               {INTERVIEW_DISCLAIMERS.map((point) => (
                 <li key={point} className="flex gap-2">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-teal-400" />
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
                   <span>{point}</span>
                 </li>
               ))}
@@ -103,11 +115,7 @@ export function Form() {
           </ModalBody>
 
           <ModalFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDisclaimer(false)}
-              className="border-border/60 bg-secondary/20"
-            >
+            <Button variant="outline" onClick={() => setShowDisclaimer(false)} className={interviewOutlineButtonClass}>
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
@@ -118,7 +126,7 @@ export function Form() {
                 saveInterviewSession(parsedProfile);
                 navigate(`/interview/${parsedProfile.interview.id}`);
               }}
-              className="bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400"
+              className={interviewPrimaryButtonClass}
             >
               Let&apos;s get started
               <ArrowRight className="h-4 w-4" />
@@ -126,150 +134,140 @@ export function Form() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-lg space-y-8">
-          <div className="space-y-3 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-teal-500/25 bg-teal-500/10 shadow-[0_0_30px_rgba(45,212,191,0.12)]">
-              <Sparkles className="h-6 w-6 text-teal-300" />
+
+      <PageContainer size="md">
+        <PageHeader
+          eyebrow="Interview"
+          title="Start your AI interview"
+          description="Upload your resume and connect GitHub. We'll build a personalized mock interview from your experience."
+          actions={
+            user ? (
+              <Button asChild variant="outline" className={interviewOutlineButtonClass}>
+                <Link to={getDashboardPath(user.role)}>Back to dashboard</Link>
+              </Button>
+            ) : null
+          }
+        />
+
+        <GlowingCard>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Get started</h2>
+            <p className="text-sm text-muted-foreground">PDF, DOCX, or TXT · GitHub public profile</p>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="resume" className="text-sm font-medium">
+                Resume
+              </Label>
+              <input
+                id="resume"
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                onChange={(event) => handleFileSelect(event.target.files?.[0])}
+              />
+
+              {!resumeFile ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDragging(false);
+                    handleFileSelect(event.dataTransfer.files?.[0]);
+                  }}
+                  className={cn(
+                    "flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-10 transition-all",
+                    interviewSurfaceClass,
+                    "hover:border-indigo-500/40 hover:bg-indigo-500/5",
+                    isDragging && "border-indigo-400 bg-indigo-500/10",
+                  )}
+                >
+                  <div className={cn("flex h-12 w-12 items-center justify-center rounded-full", interviewAccentIconClass)}>
+                    <Upload className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1 text-center">
+                    <p className="text-sm font-medium">Drop your resume here</p>
+                    <p className="text-xs text-muted-foreground">or click to browse files</p>
+                  </div>
+                </button>
+              ) : (
+                <div className={cn("flex items-center gap-3 rounded-xl px-4 py-3", interviewSurfaceClass)}>
+                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", interviewAccentIconClass)}>
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{resumeFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{(resumeFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      setResumeFile(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                AI Interview
-                <span className="bg-gradient-to-r from-teal-300 via-emerald-200 to-amber-300 bg-clip-text text-transparent"> Kickstart</span>
-              </h1>
-              <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Upload your resume and connect GitHub. We&apos;ll build a personalized mock interview from your experience.
-              </p>
+
+            <div className="space-y-3">
+              <Label htmlFor="github" className="text-sm font-medium">
+                GitHub profile
+              </Label>
+              <div className="relative">
+                <Code2 className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="github"
+                  placeholder="github.com/username"
+                  value={githubUrl}
+                  onChange={(event) => setGithubUrl(event.target.value)}
+                  className={cn("h-11 pl-10", interviewSurfaceClass)}
+                />
+              </div>
             </div>
           </div>
 
-          <Card className="border-border/60 bg-card/70 shadow-2xl shadow-teal-950/20 backdrop-blur-xl">
-            <CardHeader className="border-b border-border/50">
-              <CardTitle className="text-xl">Get started</CardTitle>
-              <CardDescription>PDF, DOCX, or TXT · GitHub public profile</CardDescription>
-            </CardHeader>
-
-            <CardContent className="space-y-6 pt-6">
-              <div className="space-y-3">
-                <Label htmlFor="resume" className="text-sm font-medium">
-                  Resume
-                </Label>
-                <input
-                  id="resume"
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                  onChange={(event) => handleFileSelect(event.target.files?.[0])}
-                />
-
-                {!resumeFile ? (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      setIsDragging(false);
-                      handleFileSelect(event.dataTransfer.files?.[0]);
-                    }}
-                    className={cn(
-                      "flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed px-6 py-10 transition-all",
-                      "bg-secondary/30 hover:border-teal-500/40 hover:bg-teal-500/5",
-                      isDragging && "border-teal-400 bg-teal-500/10",
-                    )}
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500/10">
-                      <Upload className="h-5 w-5 text-teal-300" />
-                    </div>
-                    <div className="space-y-1 text-center">
-                      <p className="text-sm font-medium">Drop your resume here</p>
-                      <p className="text-xs text-muted-foreground">or click to browse files</p>
-                    </div>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-secondary/40 px-4 py-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-500/10">
-                      <FileText className="h-5 w-5 text-teal-300" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{resumeFile.name}</p>
-                      <p className="text-xs text-muted-foreground">{(resumeFile.size / 1024).toFixed(1)} KB</p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => {
-                        setResumeFile(null);
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="github" className="text-sm font-medium">
-                  GitHub profile
-                </Label>
-                <div className="relative">
-                  <Code2 className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="github"
-                    placeholder="github.com/username"
-                    value={githubUrl}
-                    onChange={(event) => setGithubUrl(event.target.value)}
-                    className="h-11 border-border/60 bg-secondary/30 pl-10"
-                  />
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-4 border-t border-border/50 pt-6">
-              <Button
-                onClick={onSubmit}
-                disabled={isSubmitting}
-                size="lg"
-                className="h-11 w-full bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Parsing resume...
-                  </>
-                ) : (
-                  <>
-                    Start interview
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Your files are processed securely and used only to generate interview questions.
-              </p>
-            </CardFooter>
-          </Card>
+          <div className="space-y-4 border-t border-white/10 pt-6">
+            <Button onClick={onSubmit} disabled={isSubmitting} size="lg" className={cn("h-11 w-full", interviewPrimaryButtonClass)}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Parsing resume...
+                </>
+              ) : (
+                <>
+                  Start interview
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Your files are processed securely and used only to generate interview questions.
+            </p>
+          </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2">
             {["Resume parsing", "GitHub analysis", "Tailored questions"].map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-border/50 bg-card/40 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm"
-              >
+              <span key={item} className={cn("rounded-full px-3 py-1 text-xs text-muted-foreground", interviewSurfaceClass)}>
                 {item}
               </span>
             ))}
           </div>
-        </div>
-      </div>
-    </PageShell>
+        </GlowingCard>
+      </PageContainer>
+    </InterviewFlowShell>
   );
 }
 

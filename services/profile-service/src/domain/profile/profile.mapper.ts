@@ -19,11 +19,13 @@ export function calculateProfileCompleteness(profile: {
   preferences: ProfilePreferences;
   links: ProfileLinks;
   resumeObjectKey: string | null;
+  photoObjectKey?: string | null;
 }): number {
   let score = 0;
 
   if (profile.name?.trim()) score += 10;
   if (profile.phone?.trim()) score += 5;
+  if (profile.photoObjectKey) score += 5;
   if (profile.skills.length > 0) score += 15;
   if (profile.experience.length > 0) score += 15;
   if (profile.education.length > 0) score += 10;
@@ -76,6 +78,8 @@ export function toCandidateProfileResponse(
     name: string | null;
     phone: string | null;
     photoUrl: string | null;
+    photoObjectKey: string | null;
+    photoMimeType: string | null;
     skills: unknown;
     experience: unknown;
     education: unknown;

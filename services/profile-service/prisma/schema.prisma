@@ -12,6 +12,8 @@ model CandidateProfile {
   name                String?
   phone               String?
   photoUrl            String?
+  photoObjectKey      String?
+  photoMimeType       String?
   skills              Json     @default("[]")
   experience          Json     @default("[]")
   education           Json     @default("[]")

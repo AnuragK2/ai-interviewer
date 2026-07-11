@@ -1,4 +1,5 @@
-import type { EmploymentType, JobStatus, JobWorkStyle } from "@ai-interviewer/api-types";
+import type { EmploymentType, GenerateJobDescriptionResponse, JobStatus, JobWorkStyle } from "@ai-interviewer/api-types";
+import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { JobDescriptionGenerator } from "@/features/jobs/components/JobDescriptionGenerator";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as jobApi from "@/features/jobs/services/job-api";
 
@@ -86,6 +88,7 @@ export function RecruiterJobEditPage() {
   const [form, setForm] = useState<FormState>(defaultForm);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [generatorOpen, setGeneratorOpen] = useState(false);
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -133,6 +136,16 @@ export function RecruiterJobEditPage() {
     setForm({ ...form, employmentTypes: next });
   }
 
+  function applyGeneratedDescription(generated: GenerateJobDescriptionResponse) {
+    setForm((current) => ({
+      ...current,
+      title: generated.title,
+      description: generated.description,
+      requiredSkills: generated.requiredSkills.join(", "),
+      preferredSkills: generated.preferredSkills.join(", "),
+    }));
+  }
+
   return (
     <PageContainer size="md">
       <PageHeader
@@ -162,6 +175,23 @@ export function RecruiterJobEditPage() {
                     </Button>
                   </div>
                 ) : null}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-4">
+                  <div>
+                    <p className="text-sm font-medium">AI job description</p>
+                    <p className="text-xs text-muted-foreground">
+                      Answer a few questions to draft the title, description, and skills.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20"
+                    onClick={() => setGeneratorOpen(true)}
+                  >
+                    <Sparkles className="size-4" />
+                    Generate with AI
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   <Label>Title</Label>
                   <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -280,6 +310,21 @@ export function RecruiterJobEditPage() {
             )}
           </CardContent>
       </GlowingCard>
+
+      <JobDescriptionGenerator
+        open={generatorOpen}
+        onOpenChange={setGeneratorOpen}
+        initialValues={{
+          title: form.title,
+          requiredSkills: form.requiredSkills,
+          preferredSkills: form.preferredSkills,
+          location: form.location,
+          workStyle: form.workStyle,
+          employmentTypes: form.employmentTypes,
+          companyName: user?.company?.name,
+        }}
+        onApply={applyGeneratedDescription}
+      />
     </PageContainer>
   );
 }

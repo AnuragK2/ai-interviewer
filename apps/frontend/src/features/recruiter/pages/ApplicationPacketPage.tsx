@@ -6,6 +6,7 @@ import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CandidateSnapshotView } from "@/features/applications/components/CandidateSnapshotView";
+import { ApplicationStatusBadge } from "@/features/applications/components/ApplicationStatusBadge";
 import { JobSnapshotView } from "@/features/applications/components/JobSnapshotView";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -100,7 +101,9 @@ export function RecruiterApplicationPacketPage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                   <p className="text-xs text-muted-foreground">Status</p>
-                  <p className="text-sm font-medium">{packet.application.status}</p>
+                  <div className="mt-2">
+                    <ApplicationStatusBadge status={packet.application.status} />
+                  </div>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                   <p className="text-xs text-muted-foreground">Fit score</p>

@@ -22,3 +22,8 @@ export * from './enums.ts';
  * 
  */
 export type Notification = Prisma.NotificationModel
+/**
+ * Model ProcessedEvent
+ * 
+ */
+export type ProcessedEvent = Prisma.ProcessedEventModel

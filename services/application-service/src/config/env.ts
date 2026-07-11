@@ -7,5 +7,6 @@ export const env = {
   gatewayUrl: process.env.GATEWAY_URL ?? "http://localhost:8080",
   interviewServiceUrl: process.env.INTERVIEW_SERVICE_URL ?? "http://localhost:3001",
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:5173",
+  internalServiceKey: process.env.INTERNAL_SERVICE_KEY ?? "dev-internal-service-key",
 } as const;
 

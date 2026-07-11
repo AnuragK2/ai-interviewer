@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { PageShell } from "@/shared/components/PageShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import {
   Modal,
@@ -13,6 +12,15 @@ import {
 } from "@/components/ui/modal";
 import { Camera, CheckCircle2, Loader2, Mic, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
+import {
+  InterviewFlowShell,
+  interviewOutlineButtonClass,
+  interviewPrimaryButtonClass,
+  interviewAccentIconClass,
+  interviewSurfaceClass,
+} from "@/features/interview/components/InterviewFlowShell";
+import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 
 type DeviceStatus = "idle" | "requesting" | "ready" | "error";
 type CheckPhase = "consent" | "checking";
@@ -199,7 +207,6 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
   }
 
   useEffect(() => {
-    // Always start from consent. Never auto-request media on mount.
     setPhase("consent");
     setCameraStatus("idle");
     setMicStatus("idle");
@@ -239,7 +246,7 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
   }
 
   return (
-    <PageShell>
+    <InterviewFlowShell>
       <Modal open={phase === "consent"}>
         <ModalContent
           aria-describedby="permission-description"
@@ -254,16 +261,16 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
             </ModalDescription>
           </ModalHeader>
 
-          <ModalBody className="space-y-3 rounded-xl border border-border/50 bg-secondary/20 p-4">
+          <ModalBody className={cn("space-y-3 rounded-xl p-4", interviewSurfaceClass)}>
             <div className="flex items-start gap-3 text-sm">
-              <Camera className="mt-0.5 h-4 w-4 shrink-0 text-teal-300" />
+              <Camera className={cn("mt-0.5 h-4 w-4 shrink-0", interviewAccentIconClass)} />
               <div>
                 <p className="font-medium">Camera</p>
                 <p className="text-muted-foreground">Used for your live video during the interview.</p>
               </div>
             </div>
             <div className="flex items-start gap-3 text-sm">
-              <Mic className="mt-0.5 h-4 w-4 shrink-0 text-teal-300" />
+              <Mic className={cn("mt-0.5 h-4 w-4 shrink-0", interviewAccentIconClass)} />
               <div>
                 <p className="font-medium">Microphone</p>
                 <p className="text-muted-foreground">Used so the interviewer can hear your answers.</p>
@@ -279,120 +286,109 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
           </ModalBody>
 
           <ModalFooter>
-            <Button variant="outline" onClick={handleExit} className="border-border/60 bg-secondary/20">
+            <Button variant="outline" onClick={handleExit} className={interviewOutlineButtonClass}>
               Exit interview
             </Button>
-            <Button
-              onClick={() => void requestMedia()}
-              className="bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400"
-            >
+            <Button onClick={() => void requestMedia()} className={interviewPrimaryButtonClass}>
               Allow camera & microphone
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
 
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="w-full max-w-2xl border-border/60 bg-card/70 shadow-2xl shadow-teal-950/20 backdrop-blur-xl">
-          <CardHeader className="border-b border-border/50">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-teal-500/25 bg-teal-500/10">
-                <ShieldAlert className="h-5 w-5 text-amber-300" />
-              </div>
-              <div>
-                <CardTitle>Device check required</CardTitle>
-                <CardDescription>
-                  {phase === "consent"
-                    ? "Grant permission in the dialog to begin device checks."
-                    : "Verify your camera and microphone are working before continuing."}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
+      <PageContainer size="md">
+        <PageHeader
+          eyebrow="Interview setup"
+          title="Device check"
+          description={
+            phase === "consent"
+              ? "Grant permission in the dialog to begin device checks."
+              : "Verify your camera and microphone are working before continuing."
+          }
+        />
 
-          <CardContent className="space-y-6 pt-6">
-            <div className="relative overflow-hidden rounded-xl border border-border/60 bg-black/40">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className={cn(
-                  "aspect-video w-full object-cover",
-                  (phase === "consent" || cameraStatus !== "ready") && "opacity-0",
-                )}
-              />
-              {(phase === "consent" || cameraStatus !== "ready") && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-secondary/30 text-sm text-muted-foreground">
-                  {cameraStatus === "requesting" ? (
-                    <>
-                      <Loader2 className="h-8 w-8 animate-spin opacity-70" />
-                      Requesting camera & microphone...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="h-8 w-8 opacity-50" />
-                      {phase === "consent" ? "Waiting for permission..." : "Camera unavailable"}
-                    </>
-                  )}
-                </div>
+        <GlowingCard>
+          <div className="flex items-center gap-3">
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", interviewAccentIconClass)}>
+              <ShieldAlert className="h-5 w-5 text-amber-300" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Camera and microphone</h2>
+              <p className="text-sm text-muted-foreground">Required for proctored AI interviews.</p>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/40">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={cn(
+                "aspect-video w-full object-cover",
+                (phase === "consent" || cameraStatus !== "ready") && "opacity-0",
               )}
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <DeviceStatusCard icon={<Camera className="h-4 w-4" />} label="Camera" status={cameraStatus} />
-              <DeviceStatusCard
-                icon={<Mic className="h-4 w-4" />}
-                label="Microphone"
-                status={micStatus}
-                meter={micLevel}
-              />
-            </div>
-
-            {error && (
-              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {error}
+            />
+            {(phase === "consent" || cameraStatus !== "ready") && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/5 text-sm text-muted-foreground">
+                {cameraStatus === "requesting" ? (
+                  <>
+                    <Loader2 className="h-8 w-8 animate-spin opacity-70" />
+                    Requesting camera & microphone...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-8 w-8 opacity-50" />
+                    {phase === "consent" ? "Waiting for permission..." : "Camera unavailable"}
+                  </>
+                )}
               </div>
             )}
+          </div>
 
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              You cannot continue without a working camera and microphone. Speak briefly to confirm your mic is
-              active.
-            </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DeviceStatusCard icon={<Camera className="h-4 w-4" />} label="Camera" status={cameraStatus} />
+            <DeviceStatusCard icon={<Mic className="h-4 w-4" />} label="Microphone" status={micStatus} meter={micLevel} />
+          </div>
 
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-              <Button variant="outline" onClick={handleExit} className="border-border/60 bg-secondary/20">
-                Exit interview
-              </Button>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                {phase === "checking" && !bothReady && (
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      if (cameraStatus === "error" || micStatus === "error") {
-                        handleRetryFromError();
-                      } else {
-                        void requestMedia();
-                      }
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    {cameraStatus === "error" || micStatus === "error" ? "Request permission again" : "Retry devices"}
-                  </Button>
-                )}
-                <Button
-                  onClick={handleContinue}
-                  disabled={!bothReady}
-                  className="bg-gradient-to-r from-teal-600 via-emerald-600 to-amber-500 text-white shadow-lg shadow-teal-950/30 hover:from-teal-500 hover:via-emerald-500 hover:to-amber-400 disabled:opacity-40"
-                >
-                  Continue to interview
-                </Button>
-              </div>
+          {error ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </PageShell>
+          ) : null}
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            You cannot continue without a working camera and microphone. Speak briefly to confirm your mic is active.
+          </p>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-6 sm:flex-row sm:justify-between">
+            <Button variant="outline" onClick={handleExit} className={interviewOutlineButtonClass}>
+              Exit interview
+            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {phase === "checking" && !bothReady ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    if (cameraStatus === "error" || micStatus === "error") {
+                      handleRetryFromError();
+                    } else {
+                      void requestMedia();
+                    }
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  {cameraStatus === "error" || micStatus === "error" ? "Request permission again" : "Retry devices"}
+                </Button>
+              ) : null}
+              <Button onClick={handleContinue} disabled={!bothReady} className={interviewPrimaryButtonClass}>
+                Continue to interview
+              </Button>
+            </div>
+          </div>
+        </GlowingCard>
+      </PageContainer>
+    </InterviewFlowShell>
   );
 }
 
@@ -408,7 +404,7 @@ function DeviceStatusCard({
   meter?: number;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-secondary/20 p-4">
+    <div className={cn("rounded-xl p-4", interviewSurfaceClass)}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-medium">
           {icon}
@@ -416,14 +412,14 @@ function DeviceStatusCard({
         </div>
         <StatusBadge status={status} />
       </div>
-      {typeof meter === "number" && status === "ready" && (
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary">
+      {typeof meter === "number" && status === "ready" ? (
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-teal-500 to-amber-400 transition-[width] duration-100"
+            className="h-full rounded-full bg-indigo-500 transition-[width] duration-100"
             style={{ width: `${meter}%` }}
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -431,7 +427,7 @@ function DeviceStatusCard({
 function StatusBadge({ status }: { status: DeviceStatus }) {
   if (status === "ready") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-teal-300">
+      <span className="inline-flex items-center gap-1 text-xs text-indigo-300">
         <CheckCircle2 className="h-3.5 w-3.5" />
         Ready
       </span>

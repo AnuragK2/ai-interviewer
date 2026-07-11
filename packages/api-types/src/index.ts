@@ -95,7 +95,10 @@ export {
 export type {
   CreateJobRequest,
   EmploymentType as JobEmploymentType,
+  GenerateJobDescriptionRequest,
+  GenerateJobDescriptionResponse,
   JobResponse,
+  JobSeniority,
   JobStatus,
   ListJobsResponse,
   RecommendedJobResponse,
@@ -103,7 +106,7 @@ export type {
   UpdateJobRequest,
   WorkStyle as JobWorkStyle,
 } from "./job";
-export { CreateJobRequestSchema, UpdateJobRequestSchema } from "./job";
+export { CreateJobRequestSchema, GenerateJobDescriptionRequestSchema, UpdateJobRequestSchema } from "./job";
 export type {
   ApplicationListItem,
   ApplicationResponse,
@@ -124,6 +127,11 @@ export type {
   RecruiterExpiringJobAlert,
   RecruiterPipelineStage,
 } from "./dashboard";
+export type {
+  RecordTenantAuditRequest,
+  TenantAuditLogListResponse,
+  TenantAuditLogResponse,
+} from "./audit";
 export type {
   CandidateProfileResponse,
   EducationEntry,

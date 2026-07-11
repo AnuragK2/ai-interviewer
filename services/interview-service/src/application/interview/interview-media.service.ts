@@ -1,6 +1,7 @@
 import { proctoringAssetRepository } from "../../infrastructure/db/repositories/proctoring-asset.repository";
 import { interviewRepository } from "../../infrastructure/db/repositories/interview.repository";
 import { getInterviewMediaUrl, storeInterviewMedia } from "../../infrastructure/storage/interview-media.storage";
+import { scanUploadBuffer } from "@ai-interviewer/file-security";
 
 export class InterviewMediaError extends Error {
   constructor(
@@ -18,6 +19,14 @@ export async function storeInterviewRecording(
 ) {
   const interview = await interviewRepository.findById(interviewId);
   if (!interview) throw new InterviewMediaError("Interview not found.", 404);
+
+  const scan = scanUploadBuffer({
+    buffer: file.buffer,
+    mimeType: file.mimetype,
+    fileName: file.originalname,
+    allowedMimeTypes: ["video/webm", "video/mp4", "audio/webm"],
+  });
+  if (!scan.ok) throw new InterviewMediaError(scan.reason, 400);
 
   const objectKey = await storeInterviewMedia(
     interviewId,
@@ -44,6 +53,14 @@ export async function storeProctoringSnapshot(
 ) {
   const interview = await interviewRepository.findById(interviewId);
   if (!interview) throw new InterviewMediaError("Interview not found.", 404);
+
+  const scan = scanUploadBuffer({
+    buffer: file.buffer,
+    mimeType: file.mimetype,
+    fileName: file.originalname,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
+  if (!scan.ok) throw new InterviewMediaError(scan.reason, 400);
 
   const objectKey = await storeInterviewMedia(
     interviewId,

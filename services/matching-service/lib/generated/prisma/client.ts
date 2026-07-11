@@ -46,3 +46,8 @@ export { Prisma }
  * 
  */
 export type Application = Prisma.ApplicationModel
+/**
+ * Model ProcessedEvent
+ * 
+ */
+export type ProcessedEvent = Prisma.ProcessedEventModel

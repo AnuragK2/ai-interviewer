@@ -22,6 +22,7 @@
   "dependencies": {
     "@ai-interviewer/api-types": "workspace:*",
     "@ai-interviewer/event-bus": "workspace:*",
+    "@ai-interviewer/observability": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@types/express": "^5.0.6",

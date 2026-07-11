@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ApplicationAnalysisCard } from "@/features/applications/components/ApplicationAnalysisCard";
+import { JobShareButtons } from "@/features/jobs/components/JobShareButtons";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import * as jobApi from "@/features/jobs/services/job-api";
+import { getJobStatusLabel } from "@/features/jobs/lib/job-status-labels";
 import * as applicationApi from "@/features/applications/services/application-api";
 
 export function CandidateJobDetailPage() {
@@ -91,7 +93,7 @@ export function CandidateJobDetailPage() {
         <CardHeader>
           <CardTitle>About the role</CardTitle>
           <CardDescription>
-            {job?.status ? `Status: ${job.status}` : ""} {job?.isExpired ? "· expired" : ""}
+            {job?.status ? `Status: ${getJobStatusLabel(job.status)}` : ""} {job?.isExpired ? "· expired" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -101,6 +103,8 @@ export function CandidateJobDetailPage() {
             <p className="text-sm text-muted-foreground">Job not found.</p>
           ) : (
             <>
+              {job.status === "OPEN" && !job.isExpired ? <JobShareButtons job={job} /> : null}
+
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Description</p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{job.description}</p>

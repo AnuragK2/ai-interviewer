@@ -55,6 +55,12 @@ export async function getRecruiterDashboard(): Promise<RecruiterDashboardRespons
   return applicationFetch<RecruiterDashboardResponse>("/api/v1/applications/_recruiter/dashboard");
 }
 
+export async function listRecruiterAuditLogs(limit = 50) {
+  return applicationFetch<import("@ai-interviewer/api-types").TenantAuditLogListResponse>(
+    `/api/v1/applications/_recruiter/audit-logs?limit=${limit}`,
+  );
+}
+
 export async function getCandidateApplication(applicationId: string): Promise<CandidateApplicationDetailResponse> {
   return applicationFetch<CandidateApplicationDetailResponse>(`/api/v1/applications/${applicationId}`);
 }

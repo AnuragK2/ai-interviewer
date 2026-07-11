@@ -63,6 +63,17 @@ export async function uploadResume(
   return data.profile;
 }
 
+export async function uploadProfilePhoto(file: File): Promise<CandidateProfileResponse> {
+  const formData = new FormData();
+  formData.append("photo", file);
+
+  const data = await profileFetch<{ profile: CandidateProfileResponse }>("/api/v1/profiles/me/photo", {
+    method: "POST",
+    body: formData,
+  });
+  return data.profile;
+}
+
 export async function getResumeDownloadUrl(): Promise<ResumeDownloadResponse> {
   return profileFetch<ResumeDownloadResponse>("/api/v1/profiles/me/resume/download");
 }

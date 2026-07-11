@@ -4,15 +4,19 @@ import { toast } from "sonner";
 import type { RecommendedJobResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MatchScoreBadge } from "@/features/jobs/components/MatchScoreBadge";
+import { JobFilters } from "@/features/jobs/components/JobFilters";
+import {
+  collectJobFilterOptions,
+  defaultJobListFilters,
+  filterJobs,
+  type JobListFilters,
+} from "@/features/jobs/lib/job-filters";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { getAccessToken } from "@/shared/lib/auth-storage";
 import * as jobApi from "@/features/jobs/services/job-api";
-
-type WorkStyleFilter = "ALL" | "REMOTE" | "HYBRID" | "ONSITE";
 
 function formatSalary(job: RecommendedJobResponse) {
   if (job.salaryMin == null && job.salaryMax == null) return null;
@@ -70,9 +74,7 @@ function JobCard({ job }: { job: RecommendedJobResponse }) {
 export function CandidateJobsListPage() {
   const [jobs, setJobs] = useState<RecommendedJobResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [workStyleFilter, setWorkStyleFilter] = useState<WorkStyleFilter>("ALL");
+  const [filters, setFilters] = useState<JobListFilters>(defaultJobListFilters);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -95,21 +97,9 @@ export function CandidateJobsListPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredJobs = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const location = locationFilter.trim().toLowerCase();
+  const filterOptions = useMemo(() => collectJobFilterOptions(jobs), [jobs]);
 
-    return jobs.filter((job) => {
-      if (workStyleFilter !== "ALL" && job.workStyle !== workStyleFilter) return false;
-      if (location && !(job.location ?? "").toLowerCase().includes(location)) return false;
-      if (!query) return true;
-
-      const haystack = [job.title, job.description, ...job.requiredSkills, ...job.preferredSkills]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [jobs, locationFilter, search, workStyleFilter]);
+  const filteredJobs = useMemo(() => filterJobs(jobs, filters), [jobs, filters]);
 
   const recommendedJobs = filteredJobs.filter((job) => job.isRecommended);
   const otherJobs = filteredJobs.filter((job) => !job.isRecommended);
@@ -132,30 +122,12 @@ export function CandidateJobsListPage() {
           <CardDescription>Filter the catalog or jump into roles recommended for your profile.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search title, skills, or description"
-              className="border-white/10 bg-white/5"
-            />
-            <Input
-              value={locationFilter}
-              onChange={(event) => setLocationFilter(event.target.value)}
-              placeholder="Filter by location"
-              className="border-white/10 bg-white/5"
-            />
-            <select
-              value={workStyleFilter}
-              onChange={(event) => setWorkStyleFilter(event.target.value as WorkStyleFilter)}
-              className="h-10 rounded-md border border-white/10 bg-white/5 px-3 text-sm"
-            >
-              <option value="ALL">All work styles</option>
-              <option value="REMOTE">Remote</option>
-              <option value="HYBRID">Hybrid</option>
-              <option value="ONSITE">Onsite</option>
-            </select>
-          </div>
+          <JobFilters
+            filters={filters}
+            onChange={setFilters}
+            locations={filterOptions.locations}
+            skills={filterOptions.skills}
+          />
 
           {loading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>

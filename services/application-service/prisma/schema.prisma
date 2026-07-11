@@ -51,3 +51,28 @@ model Application {
   @@index([interviewId])
   @@unique([jobId, candidateUserId])
 }
+
+model ProcessedEvent {
+  id           String   @id @default(uuid())
+  consumerName String
+  eventId      String
+  subject      String
+  processedAt  DateTime @default(now())
+
+  @@unique([consumerName, eventId])
+  @@index([processedAt])
+}
+
+model TenantAuditLog {
+  id           String   @id @default(uuid())
+  companyId    String
+  actorUserId  String
+  actorEmail   String?
+  action       String
+  resourceType String
+  resourceId   String?
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+
+  @@index([companyId, createdAt])
+}

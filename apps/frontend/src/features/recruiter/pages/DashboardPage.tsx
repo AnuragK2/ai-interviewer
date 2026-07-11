@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
-import type { RecruiterDashboardResponse } from "@ai-interviewer/api-types";
+import type { RecruiterDashboardResponse, TenantAuditLogResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +23,15 @@ function StatCard({ label, value, hint }: { label: string; value: string | numbe
 export function RecruiterDashboardPage() {
   const { user } = useAuth();
   const [dashboard, setDashboard] = useState<RecruiterDashboardResponse | null>(null);
+  const [auditLogs, setAuditLogs] = useState<TenantAuditLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void applicationApi
-      .getRecruiterDashboard()
-      .then(setDashboard)
+    void Promise.all([applicationApi.getRecruiterDashboard(), applicationApi.listRecruiterAuditLogs(8)])
+      .then(([dashboardData, auditData]) => {
+        setDashboard(dashboardData);
+        setAuditLogs(auditData.logs);
+      })
       .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load dashboard."))
       .finally(() => setLoading(false));
   }, []);
@@ -122,6 +125,28 @@ export function RecruiterDashboardPage() {
               </CardContent>
             </GlowingCard>
           </div>
+
+          <GlowingCard>
+            <CardHeader>
+              <CardTitle>Recent recruiter actions</CardTitle>
+              <CardDescription>Tenant-scoped audit trail for sensitive operations.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {auditLogs.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No audit events yet.</p>
+              ) : (
+                auditLogs.map((log) => (
+                  <div key={log.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-medium">{log.action}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {log.resourceType}
+                      {log.resourceId ? ` · ${log.resourceId.slice(0, 8)}` : ""} · {log.createdAt.slice(0, 16)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </GlowingCard>
         </div>
       )}
     </PageContainer>

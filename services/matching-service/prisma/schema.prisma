@@ -7,6 +7,9 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Shares the `ai_interviewer_applications` database with application-service.
+/// Run `bun run db:migrate` only in application-service; here use `bun run db:generate`.
+
 enum ApplicationStatus {
   SUBMITTED
   ANALYZING
@@ -47,4 +50,15 @@ model Application {
   @@index([candidateUserId])
   @@index([interviewId])
   @@unique([jobId, candidateUserId])
+}
+
+model ProcessedEvent {
+  id           String   @id @default(uuid())
+  consumerName String
+  eventId      String
+  subject      String
+  processedAt  DateTime @default(now())
+
+  @@unique([consumerName, eventId])
+  @@index([processedAt])
 }
