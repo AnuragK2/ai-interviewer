@@ -1,6 +1,7 @@
 import type { InterviewFeedbackResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/shared/components/loading";
 import { Link } from "react-router";
 
 type PostInterviewFeedbackCardProps = {
@@ -44,7 +45,10 @@ export function PostInterviewFeedbackCard({ feedback, interviewId }: PostIntervi
   if (!report && !feedback.results) {
     return (
       <GlowingCard>
-        <p className="p-1 text-sm text-muted-foreground">Interview feedback is still being generated…</p>
+        <div className="flex items-center gap-3 p-4" role="status" aria-live="polite">
+          <Spinner size="sm" />
+          <p className="text-sm text-muted-foreground">Interview feedback is still being generated…</p>
+        </div>
       </GlowingCard>
     );
   }

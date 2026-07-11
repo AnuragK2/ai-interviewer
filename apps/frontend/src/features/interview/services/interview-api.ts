@@ -1,4 +1,5 @@
 import type { InterviewFeedbackResponse } from "@ai-interviewer/api-types";
+import type { InterviewResultsResponse } from "@/shared/api/types";
 import { BACKEND_URL } from "@/shared/api/config";
 import { getAccessToken } from "@/shared/lib/auth-storage";
 
@@ -21,6 +22,10 @@ async function interviewFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getInterviewFeedback(interviewId: string): Promise<InterviewFeedbackResponse> {
   return interviewFetch<InterviewFeedbackResponse>(`/api/v1/interview/${interviewId}/feedback`);
+}
+
+export async function getInterviewResults(interviewId: string): Promise<InterviewResultsResponse> {
+  return interviewFetch<InterviewResultsResponse>(`/api/v1/interview/${interviewId}/results`);
 }
 
 export async function uploadInterviewRecording(interviewId: string, blob: Blob) {

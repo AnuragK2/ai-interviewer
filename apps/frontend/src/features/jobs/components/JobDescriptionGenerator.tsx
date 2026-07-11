@@ -21,6 +21,7 @@ import {
   ModalTitle,
 } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
+import { ButtonLoading } from "@/shared/components/loading";
 import * as jobApi from "@/features/jobs/services/job-api";
 
 type JobDescriptionGeneratorProps = {
@@ -280,7 +281,9 @@ export function JobDescriptionGenerator({
             onClick={() => void handleGenerate()}
             disabled={generating}
           >
-            {generating ? "Generating…" : "Generate description"}
+            <ButtonLoading loading={generating} loadingText="Generating…">
+              Generate description
+            </ButtonLoading>
           </Button>
         </ModalFooter>
       </ModalContent>

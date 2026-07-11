@@ -8,6 +8,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { JobShareButtons } from "@/features/jobs/components/JobShareButtons";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { CardLoader } from "@/shared/components/loading";
 import * as jobApi from "@/features/jobs/services/job-api";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-status-labels";
 
@@ -48,7 +49,7 @@ export function PublicJobDetailPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <CardLoader message="Loading job details…" />
           ) : !job ? (
             <p className="text-sm text-muted-foreground">Job not found.</p>
           ) : (

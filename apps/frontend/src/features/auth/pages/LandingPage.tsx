@@ -44,7 +44,7 @@ export function LandingPage() {
           <CardHeader>
             <CardTitle>I&apos;m a recruiter</CardTitle>
             <CardDescription>
-              Create your company workspace, post jobs, and review applicant packets with AI insights.
+              Create your company workspace, post jobs, and review applications with AI insights.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex gap-3">
@@ -59,10 +59,11 @@ export function LandingPage() {
       </div>
 
       <FadeIn delay={0.3} className="text-center text-sm text-muted-foreground">
-        Already have an interview link?{" "}
-        <Link to="/legacy" className="text-indigo-300 underline-offset-4 hover:underline">
-          Use the legacy interview flow
-        </Link>
+        Invited to an interview?{" "}
+        <Link to="/login?role=candidate" className="text-indigo-300 underline-offset-4 hover:underline">
+          Sign in to your candidate account
+        </Link>{" "}
+        and open the application from your dashboard.
       </FadeIn>
     </PageContainer>
   );

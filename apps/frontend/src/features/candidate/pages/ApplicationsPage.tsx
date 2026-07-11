@@ -8,6 +8,7 @@ import { ApplicationStatusBadge } from "@/features/applications/components/Appli
 import { MatchScoreBadge } from "@/features/jobs/components/MatchScoreBadge";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { CardLoader } from "@/shared/components/loading";
 import * as applicationApi from "@/features/applications/services/application-api";
 import {
   applicationStatusFilterOptions,
@@ -80,7 +81,7 @@ export function CandidateApplicationsPage() {
       />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <CardLoader message="Loading applications…" />
       ) : applications.length === 0 ? (
         <GlowingCard>
           <p className="p-1 text-sm text-muted-foreground">No applications yet. Browse jobs to get started.</p>

@@ -15,6 +15,7 @@ import {
 } from "@/features/jobs/lib/job-filters";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { CardLoader } from "@/shared/components/loading";
 import { getAccessToken } from "@/shared/lib/auth-storage";
 import * as jobApi from "@/features/jobs/services/job-api";
 
@@ -130,7 +131,7 @@ export function CandidateJobsListPage() {
           />
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <CardLoader message="Loading jobs…" />
           ) : filteredJobs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No jobs match your filters.</p>
           ) : (

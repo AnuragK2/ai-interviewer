@@ -10,13 +10,14 @@ import { ApplicationStatusBadge } from "@/features/applications/components/Appli
 import { JobSnapshotView } from "@/features/applications/components/JobSnapshotView";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { ButtonLoading, CardLoader } from "@/shared/components/loading";
 import { getCandidateName, getJobTitle } from "@/features/applications/lib/parse-snapshot";
 import { InterviewReviewPanel } from "@/features/recruiter/components/InterviewReviewPanel";
 import * as applicationApi from "@/features/applications/services/application-api";
 
 export function RecruiterApplicationPacketPage() {
   const { id } = useParams();
-  const [packet, setPacket] = useState<RecruiterApplicationPacketResponse | null>(null);
+  const [detail, setDetail] = useState<RecruiterApplicationPacketResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
 
@@ -25,8 +26,8 @@ export function RecruiterApplicationPacketPage() {
     setLoading(true);
     void applicationApi
       .getRecruiterApplicationPacket(id)
-      .then(setPacket)
-      .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load application packet."))
+      .then(setDetail)
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load application."))
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -35,7 +36,7 @@ export function RecruiterApplicationPacketPage() {
     setInviting(true);
     try {
       const application = await applicationApi.inviteToInterview(id);
-      setPacket((current) =>
+      setDetail((current) =>
         current
           ? {
               ...current,
@@ -51,87 +52,91 @@ export function RecruiterApplicationPacketPage() {
     }
   }
 
-  const canInvite = packet?.application.status === "ANALYZED";
+  const canInvite = detail?.application.status === "ANALYZED";
   const candidateName =
-    packet?.application.candidateName ??
-    (packet ? getCandidateName(packet.candidateSnapshot) : null);
-  const jobTitle = packet ? getJobTitle(packet.jobSnapshot) : null;
+    detail?.application.candidateName ??
+    (detail ? getCandidateName(detail.candidateSnapshot) : null);
+  const jobTitle = detail ? getJobTitle(detail.jobSnapshot) : null;
 
   return (
     <PageContainer>
       <PageHeader
-        eyebrow="Applicant packet"
-        title={loading ? "Loading…" : (candidateName ?? "Application packet")}
+        eyebrow="Application"
+        title={loading ? "Loading…" : (candidateName ?? "Application")}
         description={
           loading
             ? undefined
-            : [jobTitle, packet ? `Applied ${packet.application.createdAt.slice(0, 10)}` : null]
+            : [jobTitle, detail ? `Applied ${detail.application.createdAt.slice(0, 10)}` : null]
                 .filter(Boolean)
                 .join(" · ")
         }
         actions={
-          packet ? (
+          detail ? (
             <Button
-              disabled={!canInvite || inviting || Boolean(packet.application.interviewId)}
+              disabled={!canInvite || inviting || Boolean(detail.application.interviewId)}
               onClick={handleInvite}
               className="bg-indigo-600 hover:bg-indigo-500"
             >
-              {packet.application.interviewId
-                ? "Interview invited"
-                : inviting
-                  ? "Inviting…"
-                  : "Invite to interview"}
+              {detail.application.interviewId ? (
+                "Interview invited"
+              ) : (
+                <ButtonLoading loading={inviting} loadingText="Inviting…">
+                  Invite to interview
+                </ButtonLoading>
+              )}
             </Button>
           ) : null
         }
       />
 
+      {loading ? (
+        <CardLoader message="Loading application…" />
+      ) : (
+        <>
       <GlowingCard>
         <CardHeader>
           <CardTitle>Analysis</CardTitle>
           <CardDescription>Async fit analysis produced shortly after the candidate applies.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : !packet ? (
-            <p className="text-sm text-muted-foreground">Not found.</p>
+          {!detail ? (
+            <p className="text-sm text-muted-foreground">Application not found.</p>
           ) : (
             <>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                   <p className="text-xs text-muted-foreground">Status</p>
                   <div className="mt-2">
-                    <ApplicationStatusBadge status={packet.application.status} />
+                    <ApplicationStatusBadge status={detail.application.status} />
                   </div>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                   <p className="text-xs text-muted-foreground">Fit score</p>
                   <p className="text-sm font-medium">
-                    {packet.application.fitScore !== null ? `${packet.application.fitScore}/100` : "Pending"}
+                    {detail.application.fitScore !== null ? `${detail.application.fitScore}/100` : "Pending"}
                   </p>
                 </div>
                 <div className="rounded-lg border border-white/10 bg-white/5 p-4">
                   <p className="text-xs text-muted-foreground">Interview</p>
                   <p className="text-sm font-medium">
-                    {packet.application.interviewId ? packet.application.interviewId : "Not invited"}
+                    {detail.application.interviewId ? detail.application.interviewId : "Not invited"}
                   </p>
                 </div>
               </div>
 
-              {packet.application.fitSummary ? (
+              {detail.application.fitSummary ? (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Summary</p>
-                  <p className="text-sm leading-relaxed">{packet.application.fitSummary}</p>
+                  <p className="text-sm leading-relaxed">{detail.application.fitSummary}</p>
                 </div>
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Strengths</p>
-                  {packet.application.strengths.length ? (
+                  {detail.application.strengths.length ? (
                     <ul className="list-disc space-y-1 pl-5 text-sm">
-                      {packet.application.strengths.map((s, idx) => (
+                      {detail.application.strengths.map((s, idx) => (
                         <li key={idx}>{s}</li>
                       ))}
                     </ul>
@@ -141,9 +146,9 @@ export function RecruiterApplicationPacketPage() {
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Concerns</p>
-                  {packet.application.concerns.length ? (
+                  {detail.application.concerns.length ? (
                     <ul className="list-disc space-y-1 pl-5 text-sm">
-                      {packet.application.concerns.map((s, idx) => (
+                      {detail.application.concerns.map((s, idx) => (
                         <li key={idx}>{s}</li>
                       ))}
                     </ul>
@@ -153,11 +158,11 @@ export function RecruiterApplicationPacketPage() {
                 </div>
               </div>
 
-              {packet.application.coverLetter ? (
+              {detail.application.coverLetter ? (
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Cover letter</p>
                   <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-white/5 p-4 text-sm">
-                    {packet.application.coverLetter}
+                    {detail.application.coverLetter}
                   </pre>
                 </div>
               ) : null}
@@ -172,7 +177,7 @@ export function RecruiterApplicationPacketPage() {
             <CardTitle>Job listing</CardTitle>
             <CardDescription>Role requirements captured when the candidate applied.</CardDescription>
           </CardHeader>
-          <CardContent>{packet ? <JobSnapshotView snapshot={packet.jobSnapshot} /> : null}</CardContent>
+          <CardContent>{detail ? <JobSnapshotView snapshot={detail.jobSnapshot} /> : null}</CardContent>
         </GlowingCard>
 
         <GlowingCard>
@@ -180,15 +185,17 @@ export function RecruiterApplicationPacketPage() {
             <CardTitle>Candidate profile</CardTitle>
             <CardDescription>Resume, skills, and experience at apply time.</CardDescription>
           </CardHeader>
-          <CardContent>{packet ? <CandidateSnapshotView snapshot={packet.candidateSnapshot} /> : null}</CardContent>
+          <CardContent>{detail ? <CandidateSnapshotView snapshot={detail.candidateSnapshot} /> : null}</CardContent>
         </GlowingCard>
       </div>
 
-      {packet?.application.interviewId &&
-      (packet.application.status === "INTERVIEW_COMPLETED" ||
-        packet.application.status === "INTERVIEW_CANCELLED") ? (
-        <InterviewReviewPanel interviewId={packet.application.interviewId} />
+      {detail?.application.interviewId &&
+      (detail.application.status === "INTERVIEW_COMPLETED" ||
+        detail.application.status === "INTERVIEW_CANCELLED") ? (
+        <InterviewReviewPanel interviewId={detail.application.interviewId} />
       ) : null}
+        </>
+      )}
     </PageContainer>
   );
 }

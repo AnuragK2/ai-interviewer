@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { InterviewFeedbackResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardLoader } from "@/shared/components/loading";
 import * as interviewApi from "@/features/interview/services/interview-api";
 
 type InterviewReviewPanelProps = {
@@ -23,7 +24,7 @@ export function InterviewReviewPanel({ interviewId }: InterviewReviewPanelProps)
   }, [interviewId]);
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Loading interview review…</p>;
+    return <CardLoader message="Loading interview review…" />;
   }
 
   if (error || !feedback) {

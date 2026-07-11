@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { CardLoader } from "@/shared/components/loading";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as jobApi from "@/features/jobs/services/job-api";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-status-labels";
@@ -44,7 +45,7 @@ export function RecruiterJobsListPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <CardLoader message="Loading jobs…" />
           ) : jobs.length === 0 ? (
             <p className="text-sm text-muted-foreground">No jobs yet.</p>
           ) : (

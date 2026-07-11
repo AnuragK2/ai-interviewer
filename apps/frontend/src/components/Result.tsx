@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
-import axios from "axios";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/shared/lib/utils";
-import { BACKEND_URL } from "@/shared/api/config";
 import type { InterviewResultsResponse } from "@/shared/api/types";
+import * as applicationApi from "@/features/applications/services/application-api";
+import * as interviewApi from "@/features/interview/services/interview-api";
 import {
   InterviewFlowShell,
   interviewAgentBubbleClass,
@@ -16,12 +16,12 @@ import {
 } from "@/features/interview/components/InterviewFlowShell";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { Spinner } from "@/shared/components/loading";
 import { useAuth } from "@/features/auth/context/auth-context";
 import {
   ArrowRight,
   Clock,
   Home,
-  Loader2,
   MessageSquare,
   Sparkles,
   Trophy,
@@ -79,30 +79,39 @@ function ScoreRing({ score }: { score: number }) {
 export function Result() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, getDashboardPath } = useAuth();
+  const { getDashboardPath } = useAuth();
   const [results, setResults] = useState<InterviewResultsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
+    const interviewId = id;
 
     let cancelled = false;
 
     async function loadResults() {
       setLoading(true);
       setError(null);
+      setAccessDenied(false);
 
       try {
-        const { data } = await axios.get<InterviewResultsResponse>(`${BACKEND_URL}/api/v1/interview/${id}/results`);
+        const access = await applicationApi.getInterviewAccess(interviewId);
+        if (cancelled) return;
+        setApplicationId(access.application.id);
+
+        const data = await interviewApi.getInterviewResults(interviewId);
         if (!cancelled) setResults(data);
       } catch (err) {
         if (cancelled) return;
-        const message =
-          axios.isAxiosError(err) && err.response?.data?.error
-            ? String(err.response.data.error)
-            : "Could not load interview results.";
-        setError(message);
+        const message = err instanceof Error ? err.message : "";
+        if (message.toLowerCase().includes("not found") || message.includes("404")) {
+          setAccessDenied(true);
+          return;
+        }
+        setError(message || "Could not load interview results.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -119,8 +128,12 @@ export function Result() {
     return <Navigate to="/" replace />;
   }
 
+  if (accessDenied) {
+    return <Navigate to="/candidate/applications" replace />;
+  }
+
   const candidateName = results?.candidate.name ?? results?.candidate.githubUsername ?? "Candidate";
-  const homePath = user ? getDashboardPath(user.role) : "/";
+  const homePath = applicationId ? `/candidate/applications/${applicationId}` : getDashboardPath("CANDIDATE");
 
   return (
     <InterviewFlowShell>
@@ -130,18 +143,18 @@ export function Result() {
           title="Your interview results"
           description={loading ? "Loading your performance summary..." : `Session summary for ${candidateName}`}
           actions={
-            user ? (
-              <Button asChild variant="outline" className={interviewOutlineButtonClass}>
-                <Link to="/candidate/applications">View applications</Link>
-              </Button>
-            ) : null
+            <Button asChild variant="outline" className={interviewOutlineButtonClass}>
+              <Link to={applicationId ? `/candidate/applications/${applicationId}` : "/candidate/applications"}>
+                View application
+              </Link>
+            </Button>
           }
         />
 
         {loading ? (
           <GlowingCard>
             <div className="flex min-h-48 flex-col items-center justify-center gap-3 py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-300" />
+              <Spinner size="lg" />
               <p className="text-sm text-muted-foreground">Fetching your results...</p>
             </div>
           </GlowingCard>
@@ -219,7 +232,7 @@ export function Result() {
             <div className="flex justify-center pb-6">
               <Button onClick={() => navigate(homePath)} size="lg" className={cn("h-11 px-8", interviewPrimaryButtonClass)}>
                 <Trophy className="h-4 w-4" />
-                {user ? "Back to dashboard" : "Return home"}
+                Back to application
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

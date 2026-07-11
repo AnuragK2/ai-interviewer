@@ -84,6 +84,13 @@ export class InterviewSessionService {
       return;
     }
 
+    if (!interview.applicationId) {
+      console.warn(`[interview-session] interview not linked to application: ${interviewId}`);
+      this.sendClient({ type: "error", message: "This interview is not available." });
+      this.client.close();
+      return;
+    }
+
     if (
       interview.status === "CANCELLED" ||
       interview.status === "FAILED" ||

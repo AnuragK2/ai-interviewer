@@ -10,8 +10,7 @@ import {
 } from "@/features/interview/components/InterviewFlowShell";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
-import { useAuth } from "@/features/auth/context/auth-context";
-import { ArrowRight, Camera, Copy, Eye, Home, Monitor, ShieldAlert, VideoOff } from "lucide-react";
+import { ArrowRight, Camera, Copy, Eye, Home, Monitor, VideoOff } from "lucide-react";
 import { clearInterviewEndState, loadInterviewEndState } from "@/shared/lib/interview-end-state";
 
 const VIOLATION_ITEMS = [
@@ -25,20 +24,21 @@ const VIOLATION_ITEMS = [
 export function ProctoringEnded() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, getDashboardPath } = useAuth();
   const endState = id ? loadInterviewEndState(id) : null;
 
   if (!id || !endState || endState.reason !== "cheat") {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/candidate/applications" replace />;
   }
 
   const interviewId = id;
   const candidateName = endState.candidateName ?? "Candidate";
-  const homePath = user ? getDashboardPath(user.role) : "/";
+  const applicationsPath = endState.applicationId
+    ? `/candidate/applications/${endState.applicationId}`
+    : "/candidate/applications";
 
   function handleReturnHome() {
     clearInterviewEndState(interviewId);
-    navigate(homePath, { replace: true });
+    navigate(applicationsPath, { replace: true });
   }
 
   return (
@@ -93,14 +93,12 @@ export function ProctoringEnded() {
           <div className="flex flex-col gap-3 border-t border-white/10 pt-6">
             <Button onClick={handleReturnHome} size="lg" className={cn("h-11 w-full", interviewPrimaryButtonClass)}>
               <Home className="h-4 w-4" />
-              {user ? "Back to dashboard" : "Return to home"}
+              Back to application
               <ArrowRight className="h-4 w-4" />
             </Button>
-            {user?.role === "CANDIDATE" ? (
-              <Button asChild variant="outline" className={interviewOutlineButtonClass}>
-                <Link to="/candidate/applications">View applications</Link>
-              </Button>
-            ) : null}
+            <Button asChild variant="outline" className={interviewOutlineButtonClass}>
+              <Link to={applicationsPath}>View applications</Link>
+            </Button>
           </div>
         </GlowingCard>
       </PageContainer>

@@ -79,7 +79,8 @@ async function buildProfileResponse(
 async function saveWithCompleteness(
   userId: string,
   email: string,
-  data: ReturnType<typeof jsonFieldsFromUpdate> & {
+  data: Omit<ReturnType<typeof jsonFieldsFromUpdate>, "photoUrl"> & {
+    photoUrl?: string | null;
     photoObjectKey?: string | null;
     photoMimeType?: string | null;
     resumeObjectKey?: string | null;

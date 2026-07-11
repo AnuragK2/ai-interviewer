@@ -6,11 +6,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { ButtonLoading, CardLoader } from "@/shared/components/loading";
 import { JobDescriptionGenerator } from "@/features/jobs/components/JobDescriptionGenerator";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as jobApi from "@/features/jobs/services/job-api";
@@ -161,14 +163,14 @@ export function RecruiterJobEditPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             {loading ? (
-              <p className="text-sm text-muted-foreground">Loading…</p>
+              <CardLoader message="Loading job…" />
             ) : (
               <>
                 {!isNew ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/10 p-4">
                     <div>
                       <p className="text-sm font-medium">Applicants</p>
-                      <p className="text-xs text-muted-foreground">View candidate applications and analysis packets.</p>
+                      <p className="text-xs text-muted-foreground">View candidate applications and AI fit analysis.</p>
                     </div>
                     <Button asChild variant="outline">
                       <Link to={`/recruiter/jobs/${id}/applicants`}>View applicants</Link>
@@ -226,11 +228,11 @@ export function RecruiterJobEditPage() {
                     <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label>Expires (YYYY-MM-DD)</Label>
-                    <Input
+                    <Label>Expires</Label>
+                    <DatePicker
                       value={form.expiresAt}
-                      onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-                      placeholder="2026-12-31"
+                      onChange={(expiresAt) => setForm({ ...form, expiresAt })}
+                      placeholder="Select expiry date"
                     />
                   </div>
                 </div>
@@ -303,7 +305,9 @@ export function RecruiterJobEditPage() {
                 </div>
                 <div className="flex justify-end pt-2">
                   <Button onClick={() => void handleSave()} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500">
-                    {saving ? "Saving…" : isNew ? "Create job" : "Save changes"}
+                    <ButtonLoading loading={saving} loadingText="Saving…">
+                      {isNew ? "Create job" : "Save changes"}
+                    </ButtonLoading>
                   </Button>
                 </div>
               </>

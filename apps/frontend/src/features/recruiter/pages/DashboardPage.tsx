@@ -8,6 +8,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import * as applicationApi from "@/features/applications/services/application-api";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { CardLoader } from "@/shared/components/loading";
 import { useAuth } from "@/features/auth/context/auth-context";
 
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
@@ -55,7 +56,7 @@ export function RecruiterDashboardPage() {
       />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading dashboard…</p>
+        <CardLoader message="Loading dashboard…" />
       ) : !dashboard ? (
         <p className="text-sm text-muted-foreground">Dashboard unavailable.</p>
       ) : (

@@ -12,6 +12,7 @@ import { PostInterviewFeedbackCard } from "@/features/applications/components/Po
 import * as interviewApi from "@/features/interview/services/interview-api";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { ButtonLoading, CardLoader } from "@/shared/components/loading";
 import * as applicationApi from "@/features/applications/services/application-api";
 
 export function CandidateApplicationAnalyticsPage() {
@@ -21,6 +22,7 @@ export function CandidateApplicationAnalyticsPage() {
   const [feedback, setFeedback] = useState<InterviewFeedbackResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   const loadDetail = useCallback(async () => {
     if (!id) return;
@@ -57,6 +59,7 @@ export function CandidateApplicationAnalyticsPage() {
   useEffect(() => {
     if (!detail?.application.interviewId || detail.application.status !== "INTERVIEW_COMPLETED") {
       setFeedback(null);
+      setFeedbackLoading(false);
       return;
     }
 
@@ -64,11 +67,14 @@ export function CandidateApplicationAnalyticsPage() {
     let cancelled = false;
 
     async function loadFeedback() {
+      setFeedbackLoading(true);
       try {
         const next = await interviewApi.getInterviewFeedback(interviewId);
         if (!cancelled) setFeedback(next);
       } catch {
         if (!cancelled) setFeedback(null);
+      } finally {
+        if (!cancelled) setFeedbackLoading(false);
       }
     }
 
@@ -122,7 +128,7 @@ export function CandidateApplicationAnalyticsPage() {
       />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <CardLoader message="Loading application…" />
       ) : !detail ? (
         <p className="text-sm text-muted-foreground">Application not found.</p>
       ) : (
@@ -141,7 +147,9 @@ export function CandidateApplicationAnalyticsPage() {
                   onClick={handleStartInterview}
                   className="bg-indigo-600 hover:bg-indigo-500"
                 >
-                  {starting ? "Starting…" : "Start interview"}
+                  <ButtonLoading loading={starting} loadingText="Starting…">
+                    Start interview
+                  </ButtonLoading>
                 </Button>
               </div>
 
@@ -171,6 +179,8 @@ export function CandidateApplicationAnalyticsPage() {
 
           {feedback && detail.application.interviewId ? (
             <PostInterviewFeedbackCard feedback={feedback} interviewId={detail.application.interviewId} />
+          ) : detail.application.status === "INTERVIEW_COMPLETED" && feedbackLoading ? (
+            <CardLoader message="Loading interview feedback…" />
           ) : null}
         </div>
       )}

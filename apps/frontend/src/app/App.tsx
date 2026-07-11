@@ -1,8 +1,8 @@
 import "../../styles/globals.css";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
-import { Form } from "@/components/Form";
 import { Interview } from "@/components/Interview";
+import { InterviewComplete } from "@/components/InterviewComplete";
 import { ProctoringEnded } from "@/components/ProctoringEnded";
 import { Result } from "@/components/Result";
 import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
@@ -51,6 +51,11 @@ export function App() {
                 <Route path="/candidate/applications" element={<CandidateApplicationsPage />} />
                 <Route path="/candidate/applications/:id" element={<CandidateApplicationAnalyticsPage />} />
               </Route>
+
+              <Route path="/interview/:id" element={<Interview />} />
+              <Route path="/interview/:id/complete" element={<InterviewComplete />} />
+              <Route path="/interview/:id/proctoring-ended" element={<ProctoringEnded />} />
+              <Route path="/results/:id" element={<Result />} />
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["RECRUITER"]} />}>
@@ -63,11 +68,6 @@ export function App() {
                 <Route path="/recruiter/applications/:id" element={<RecruiterApplicationPacketPage />} />
               </Route>
             </Route>
-
-            <Route path="/legacy" element={<Form />} />
-            <Route path="/interview/:id" element={<Interview />} />
-            <Route path="/interview/:id/proctoring-ended" element={<ProctoringEnded />} />
-            <Route path="/results/:id" element={<Result />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

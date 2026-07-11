@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { PageShell } from "@/shared/components/PageShell";
+import { PageLoader } from "@/shared/components/loading";
 import { useAuth } from "../context/auth-context";
 
 export function OAuthCallbackPage() {
@@ -48,9 +49,7 @@ export function OAuthCallbackPage() {
 
   return (
     <PageShell>
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Completing sign-in…
-      </div>
+      <PageLoader message="Completing sign-in…" minHeight="min-h-screen" />
     </PageShell>
   );
 }

@@ -1,6 +1,7 @@
 import { Camera } from "lucide-react";
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoading } from "@/shared/components/loading";
 
 type ProfilePhotoUploadProps = {
   photoUrl: string | null;
@@ -68,8 +69,12 @@ export function ProfilePhotoUpload({
           disabled={uploading}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Camera className="size-4" />
-          {uploading ? "Uploading…" : imageUrl ? "Change photo" : "Upload photo"}
+          <ButtonLoading loading={uploading} loadingText="Uploading…">
+            <span className="inline-flex items-center gap-2">
+              <Camera className="size-4" />
+              {imageUrl ? "Change photo" : "Upload photo"}
+            </span>
+          </ButtonLoading>
         </Button>
       </div>
     </div>

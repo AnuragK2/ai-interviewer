@@ -2,6 +2,7 @@ import type { OAuthProviderKey, UserRole } from "@ai-interviewer/api-types";
 import type { SVGProps } from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/shared/components/loading";
 import { fetchOAuthProviders, getOAuthStartUrl } from "../services/auth-api";
 
 type OAuthButtonsProps = {
@@ -62,7 +63,12 @@ export function OAuthButtons({ role }: OAuthButtonsProps) {
   }, []);
 
   if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Checking sign-in options…</p>;
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite">
+        <Spinner size="sm" />
+        Checking sign-in options…
+      </div>
+    );
   }
 
   if (providers.length === 0) {

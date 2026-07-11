@@ -10,7 +10,8 @@ import {
   ModalHeader,
   ModalTitle,
 } from "@/components/ui/modal";
-import { Camera, CheckCircle2, Loader2, Mic, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
+import { ArrowRight, Camera, CheckCircle2, Loader2, Mic, RefreshCw, ShieldAlert, XCircle } from "lucide-react";
+import { INTERVIEW_DISCLAIMERS } from "@/features/interview/constants/disclaimer";
 import { cn } from "@/shared/lib/utils";
 import {
   InterviewFlowShell,
@@ -23,7 +24,7 @@ import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 
 type DeviceStatus = "idle" | "requesting" | "ready" | "error";
-type CheckPhase = "consent" | "checking";
+type CheckPhase = "disclaimer" | "consent" | "checking";
 
 type MediaCheckProps = {
   candidateName: string;
@@ -69,7 +70,7 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
   const animationFrameRef = useRef<number | null>(null);
   const requestIdRef = useRef(0);
 
-  const [phase, setPhase] = useState<CheckPhase>("consent");
+  const [phase, setPhase] = useState<CheckPhase>("disclaimer");
   const [cameraStatus, setCameraStatus] = useState<DeviceStatus>("idle");
   const [micStatus, setMicStatus] = useState<DeviceStatus>("idle");
   const [micLevel, setMicLevel] = useState(0);
@@ -207,7 +208,7 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
   }
 
   useEffect(() => {
-    setPhase("consent");
+    setPhase("disclaimer");
     setCameraStatus("idle");
     setMicStatus("idle");
     setMicLevel(0);
@@ -247,6 +248,47 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
 
   return (
     <InterviewFlowShell>
+      <Modal open={phase === "disclaimer"}>
+        <ModalContent
+          aria-describedby="disclaimer-description"
+          onPointerDownOutside={(event) => event.preventDefault()}
+          onEscapeKeyDown={(event) => event.preventDefault()}
+          onInteractOutside={(event) => event.preventDefault()}
+        >
+          <ModalHeader>
+            <ModalTitle>Before you begin</ModalTitle>
+            <ModalDescription id="disclaimer-description">
+              {candidateName}, please read and acknowledge the interview rules before continuing.
+            </ModalDescription>
+          </ModalHeader>
+
+          <ModalBody className={cn("space-y-3 rounded-xl p-4", interviewSurfaceClass)}>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ShieldAlert className="h-4 w-4 text-amber-300" />
+              Interview guidelines
+            </div>
+            <ul className="space-y-2.5 text-sm leading-relaxed text-muted-foreground">
+              {INTERVIEW_DISCLAIMERS.map((point) => (
+                <li key={point} className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="outline" onClick={handleExit} className={interviewOutlineButtonClass}>
+              Exit interview
+            </Button>
+            <Button onClick={() => setPhase("consent")} className={interviewPrimaryButtonClass}>
+              Let&apos;s get started
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       <Modal open={phase === "consent"}>
         <ModalContent
           aria-describedby="permission-description"
@@ -301,9 +343,11 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
           eyebrow="Interview setup"
           title="Device check"
           description={
-            phase === "consent"
-              ? "Grant permission in the dialog to begin device checks."
-              : "Verify your camera and microphone are working before continuing."
+            phase === "disclaimer"
+              ? "Review the interview guidelines in the dialog to continue."
+              : phase === "consent"
+                ? "Grant permission in the dialog to begin device checks."
+                : "Verify your camera and microphone are working before continuing."
           }
         />
 
@@ -326,10 +370,10 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
               muted
               className={cn(
                 "aspect-video w-full object-cover",
-                (phase === "consent" || cameraStatus !== "ready") && "opacity-0",
+                (phase !== "checking" || cameraStatus !== "ready") && "opacity-0",
               )}
             />
-            {(phase === "consent" || cameraStatus !== "ready") && (
+            {(phase !== "checking" || cameraStatus !== "ready") && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/5 text-sm text-muted-foreground">
                 {cameraStatus === "requesting" ? (
                   <>
@@ -339,7 +383,11 @@ export function MediaCheck({ candidateName, onReady, onExit }: MediaCheckProps) 
                 ) : (
                   <>
                     <Camera className="h-8 w-8 opacity-50" />
-                    {phase === "consent" ? "Waiting for permission..." : "Camera unavailable"}
+                    {phase === "disclaimer"
+                      ? "Review guidelines to continue..."
+                      : phase === "consent"
+                        ? "Waiting for permission..."
+                        : "Camera unavailable"}
                   </>
                 )}
               </div>

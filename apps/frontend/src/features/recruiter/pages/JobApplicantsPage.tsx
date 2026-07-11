@@ -8,6 +8,7 @@ import { ApplicationStatusBadge } from "@/features/applications/components/Appli
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { PageLoader } from "@/shared/components/loading";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as applicationApi from "@/features/applications/services/application-api";
 import * as jobApi from "@/features/jobs/services/job-api";
@@ -48,11 +49,11 @@ export function RecruiterJobApplicantsPage() {
       <GlowingCard>
         <CardHeader>
           <CardTitle>Applications</CardTitle>
-          <CardDescription>{loading ? "Loading…" : `${applications.length} applicants`}</CardDescription>
+          <CardDescription>{loading ? "Loading applicants…" : `${applications.length} applicants`}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <PageLoader message="Loading applicants…" minHeight="min-h-40" />
           ) : applications.length === 0 ? (
             <p className="text-sm text-muted-foreground">No applicants yet.</p>
           ) : (
@@ -76,7 +77,7 @@ export function RecruiterJobApplicantsPage() {
                     {app.fitScore !== null ? `Fit: ${app.fitScore}/100` : "Analysis pending…"}
                   </div>
                   <Button asChild variant="outline" size="sm" className="border-white/10 bg-white/5">
-                    <Link to={`/recruiter/applications/${app.id}`}>View packet</Link>
+                    <Link to={`/recruiter/applications/${app.id}`}>View application</Link>
                   </Button>
                 </div>
               </div>

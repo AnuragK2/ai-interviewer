@@ -1,4 +1,5 @@
 import type { ApplicationResponse } from "@ai-interviewer/api-types";
+import { Spinner } from "@/shared/components/loading";
 
 type ApplicationAnalysisCardProps = {
   application: ApplicationResponse;
@@ -7,7 +8,8 @@ type ApplicationAnalysisCardProps = {
 export function ApplicationAnalysisCard({ application }: ApplicationAnalysisCardProps) {
   if (application.status === "ANALYZING" || application.fitScore === null) {
     return (
-      <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-sm text-yellow-200">
+      <div className="flex items-center gap-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-sm text-yellow-200" role="status" aria-live="polite">
+        <Spinner size="sm" className="text-yellow-200" />
         Analysis in progress… This usually completes within a few seconds.
       </div>
     );

@@ -8,6 +8,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { ButtonLoading, PageLoader } from "@/shared/components/loading";
 import { OAuthButtons } from "../components/OAuthButtons";
 import { useAuth } from "../context/auth-context";
 
@@ -25,7 +26,15 @@ export function RegisterPage() {
   const [title, setTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (!isLoading && user) {
+  if (isLoading) {
+    return (
+      <PageContainer size="md" className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+        <PageLoader message="Loading…" minHeight="min-h-0" />
+      </PageContainer>
+    );
+  }
+
+  if (user) {
     return <Navigate to={getDashboardPath(user.role)} replace />;
   }
 
@@ -118,7 +127,9 @@ export function RegisterPage() {
               ) : null}
 
               <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500" disabled={submitting}>
-                {submitting ? "Creating account…" : "Create account"}
+                <ButtonLoading loading={submitting} loadingText="Creating account…">
+                  Create account
+                </ButtonLoading>
               </Button>
             </form>
 

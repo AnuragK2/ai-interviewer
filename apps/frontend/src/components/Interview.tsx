@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router";
-import { clearInterviewSession, loadInterviewSession } from "@/shared/lib/interview-session";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { saveInterviewEndState } from "@/shared/lib/interview-end-state";
 import { stopMediaStream } from "@/shared/lib/media-stream";
 import { useProctoring } from "@/features/proctoring/hooks/use-proctoring";
 import * as applicationApi from "@/features/applications/services/application-api";
-import { getAccessToken } from "@/shared/lib/auth-storage";
-import type { PreInterviewResponse } from "@/shared/api/types";
+import type { InterviewAccessResponse } from "@ai-interviewer/api-types";
 import { useInterviewRecording } from "@/features/interview/hooks/use-interview-recording";
 import { captureVideoFrame } from "@/features/interview/lib/capture-video-frame";
 import * as interviewApi from "@/features/interview/services/interview-api";
 import { InterviewFlowShell } from "@/features/interview/components/InterviewFlowShell";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { PageLoader } from "@/shared/components/loading";
+import { Button } from "@/components/ui/button";
 import {
   connectRealtimeInterview,
   type BackendInterviewEvent,
@@ -41,16 +41,14 @@ export function Interview() {
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isCameraEnabled, setIsCameraEnabled] = useState(true);
   const [accessChecked, setAccessChecked] = useState(false);
-  const [accessGranted, setAccessGranted] = useState(false);
-  const [platformProfile, setPlatformProfile] = useState<PreInterviewResponse | null>(null);
+  const [access, setAccess] = useState<InterviewAccessResponse | null>(null);
 
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const realtimeRef = useRef<RealtimeConnection | null>(null);
   const agentMessageIdRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const accessRef = useRef<InterviewAccessResponse | null>(null);
 
-  const legacyProfile = useMemo(() => (id ? loadInterviewSession(id) : null), [id]);
-  const profile = legacyProfile ?? platformProfile;
   const { stopAndGetBlob } = useInterviewRecording(
     mediaStream,
     checksPassed && connectionStatus === "connected",
@@ -83,57 +81,31 @@ export function Interview() {
   useEffect(() => {
     if (!id) return;
 
-    if (legacyProfile) {
-      setAccessGranted(true);
-      setAccessChecked(true);
-      return;
-    }
-
-    if (!getAccessToken()) {
-      setAccessGranted(false);
-      setAccessChecked(true);
-      return;
-    }
-
     let cancelled = false;
-    void applicationApi
-      .getInterviewAccess(id)
-      .then((access) => {
+
+    void (async () => {
+      try {
+        let nextAccess = await applicationApi.getInterviewAccess(id);
+
+        if (nextAccess.application.status === "INTERVIEW_INVITED") {
+          await applicationApi.markInterviewPending(nextAccess.application.id);
+          nextAccess = await applicationApi.getInterviewAccess(id);
+        }
+
         if (cancelled) return;
-        setAccessGranted(access.canStartInterview);
-        setPlatformProfile({
-          interview: {
-            id,
-            status: "PENDING",
-            score: 0,
-            createdAt: new Date().toISOString(),
-          },
-          resume: {
-            rawText: "",
-            skills: [],
-            experience: [],
-            education: [],
-            projects: [],
-            name: access.jobTitle ?? "Candidate",
-          },
-          github: {
-            username: "",
-            profileUrl: "",
-            repos: [],
-          },
-        });
-      })
-      .catch(() => {
-        if (!cancelled) setAccessGranted(false);
-      })
-      .finally(() => {
+        setAccess(nextAccess);
+        accessRef.current = nextAccess;
+      } catch {
+        if (!cancelled) setAccess(null);
+      } finally {
         if (!cancelled) setAccessChecked(true);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [id, legacyProfile]);
+  }, [id]);
 
   const proctoring = useProctoring({
     videoRef,
@@ -162,7 +134,7 @@ export function Interview() {
   }, []);
 
   useEffect(() => {
-    if (!checksPassed || !mediaStream || !id || !profile) return;
+    if (!checksPassed || !mediaStream || !id || !access?.canStartInterview) return;
 
     let cancelled = false;
 
@@ -275,6 +247,10 @@ export function Interview() {
     }
 
     function handleInterviewEnded(event: Extract<BackendInterviewEvent, { type: "interview.ended" }>) {
+      const currentAccess = accessRef.current;
+      const applicationId = currentAccess?.application.id;
+      const candidateName = currentAccess?.application.candidateName ?? currentAccess?.jobTitle ?? "Candidate";
+
       void uploadSessionRecording().finally(() => {
         cleanupMedia();
 
@@ -284,14 +260,31 @@ export function Interview() {
             message: event.message,
             score: event.score,
             interviewId: id!,
-            candidateName: profile?.resume.name ?? profile?.github.username,
+            applicationId,
+            candidateName,
           });
-          clearInterviewSession(id!);
           navigate(`/interview/${id}/proctoring-ended`, { replace: true });
           return;
         }
 
-        clearInterviewSession(id!);
+        if (event.reason === "completed" || event.reason === "client_end") {
+          saveInterviewEndState({
+            reason: event.reason,
+            message: event.message,
+            score: event.score,
+            interviewId: id!,
+            applicationId,
+            candidateName,
+          });
+          navigate(`/interview/${id}/complete`, { replace: true });
+          return;
+        }
+
+        if (applicationId) {
+          navigate(`/candidate/applications/${applicationId}`, { replace: true });
+          return;
+        }
+
         navigate(`/results/${id}`, { replace: true });
       });
     }
@@ -303,7 +296,7 @@ export function Interview() {
       realtimeRef.current?.close();
       realtimeRef.current = null;
     };
-  }, [checksPassed, mediaStream, id, profile, navigate]);
+  }, [checksPassed, mediaStream, id, access?.canStartInterview, navigate]);
 
   useEffect(() => {
     if (!checksPassed || connectionStatus !== "connected") return;
@@ -344,19 +337,37 @@ export function Interview() {
     return (
       <InterviewFlowShell>
         <PageContainer>
-          <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-            Checking interview access…
+          <PageLoader message="Checking interview access…" />
+        </PageContainer>
+      </InterviewFlowShell>
+    );
+  }
+
+  if (!access?.canStartInterview) {
+    const applicationId = access?.application.id;
+    return (
+      <InterviewFlowShell>
+        <PageContainer size="md">
+          <div className="mx-auto max-w-lg space-y-4 py-16 text-center">
+            <h1 className="text-xl font-semibold">Interview not available</h1>
+            <p className="text-sm text-muted-foreground">
+              {access
+                ? "This interview has not been opened for you yet, or it has already finished."
+                : "You do not have access to this interview. Only invited candidates can join."}
+            </p>
+            <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+              <Link to={applicationId ? `/candidate/applications/${applicationId}` : "/candidate/applications"}>
+                Back to applications
+              </Link>
+            </Button>
           </div>
         </PageContainer>
       </InterviewFlowShell>
     );
   }
 
-  if (!profile || !accessGranted) {
-    return <Navigate to="/" replace />;
-  }
-
-  const candidateName = profile.resume.name ?? profile.github.username ?? "Candidate";
+  const candidateName = access.application.candidateName ?? access.jobTitle ?? "Candidate";
+  const interviewId = access.application.interviewId ?? id;
 
   function exitInterview() {
     realtimeRef.current?.endInterview();
@@ -401,7 +412,7 @@ export function Interview() {
   return (
     <InterviewRoom
       candidateName={candidateName}
-      interviewId={profile.interview.id}
+      interviewId={interviewId}
       mediaStream={mediaStream}
       videoRef={videoRef}
       proctoring={proctoring}

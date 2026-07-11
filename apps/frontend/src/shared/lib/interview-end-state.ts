@@ -5,6 +5,7 @@ export type InterviewEndState = {
   message: string;
   score?: number;
   interviewId: string;
+  applicationId?: string;
   candidateName?: string;
   endedAt: string;
 };

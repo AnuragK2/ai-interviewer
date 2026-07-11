@@ -8,6 +8,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
+import { ButtonLoading, PageLoader } from "@/shared/components/loading";
 import { OAuthButtons } from "../components/OAuthButtons";
 import { useAuth } from "../context/auth-context";
 
@@ -15,13 +16,26 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const role = searchParams.get("role") === "recruiter" ? "RECRUITER" : "CANDIDATE";
+  const redirectParam = searchParams.get("redirect");
+  const safeRedirect =
+    redirectParam?.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : null;
   const { login, user, isLoading, getDashboardPath } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (!isLoading && user) {
-    return <Navigate to={getDashboardPath(user.role)} replace />;
+  if (isLoading) {
+    return (
+      <PageContainer size="md" className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+        <PageLoader message="Loading…" minHeight="min-h-0" />
+      </PageContainer>
+    );
+  }
+
+  if (user) {
+    const destination =
+      user.role === "CANDIDATE" && safeRedirect ? safeRedirect : getDashboardPath(user.role);
+    return <Navigate to={destination} replace />;
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -30,7 +44,9 @@ export function LoginPage() {
 
     try {
       const nextUser = await login(email, password);
-      navigate(getDashboardPath(nextUser.role));
+      const destination =
+        nextUser.role === "CANDIDATE" && safeRedirect ? safeRedirect : getDashboardPath(nextUser.role);
+      navigate(destination);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Sign in failed.");
     } finally {
@@ -83,7 +99,9 @@ export function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500" disabled={submitting}>
-              {submitting ? "Signing in…" : "Sign in"}
+              <ButtonLoading loading={submitting} loadingText="Signing in…">
+                Sign in
+              </ButtonLoading>
             </Button>
           </form>
 

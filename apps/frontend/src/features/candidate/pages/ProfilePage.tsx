@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { ButtonLoading, PageLoader } from "@/shared/components/loading";
 import { ProfilePhotoUpload } from "@/features/candidate/components/ProfilePhotoUpload";
 import { useAuth } from "@/features/auth/context/auth-context";
 import * as profileApi from "../services/profile-api";
@@ -171,7 +172,7 @@ export function ProfilePage() {
   if (loading) {
     return (
       <PageContainer>
-        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">Loading profile…</div>
+        <PageLoader message="Loading profile…" />
       </PageContainer>
     );
   }
@@ -459,7 +460,9 @@ export function ProfilePage() {
                 onChange={(e) => setLinks({ ...links, github: e.target.value })}
               />
               <Button type="button" variant="outline" disabled={enrichingGithub} onClick={() => void handleGithubEnrich()}>
-                {enrichingGithub ? "Fetching…" : "Enrich"}
+                <ButtonLoading loading={enrichingGithub} loadingText="Fetching…">
+                  Enrich
+                </ButtonLoading>
               </Button>
             </div>
             {profile?.githubMeta ? (
@@ -489,7 +492,9 @@ export function ProfilePage() {
             />
             <div className="flex flex-wrap gap-2">
               <Button type="button" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-                {uploading ? "Uploading…" : profile?.resume ? "Replace resume" : "Upload resume"}
+                <ButtonLoading loading={uploading} loadingText="Uploading…">
+                  {profile?.resume ? "Replace resume" : "Upload resume"}
+                </ButtonLoading>
               </Button>
               {profile?.resume ? (
                 <Button type="button" variant="outline" onClick={() => void handleDownloadResume()}>
@@ -511,7 +516,9 @@ export function ProfilePage() {
 
         <div className="flex justify-end pb-4">
           <Button onClick={() => void handleSave()} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500">
-            {saving ? "Saving…" : "Save profile"}
+            <ButtonLoading loading={saving} loadingText="Saving…">
+              Save profile
+            </ButtonLoading>
           </Button>
         </div>
     </PageContainer>
