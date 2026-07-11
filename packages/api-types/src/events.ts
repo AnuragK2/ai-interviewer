@@ -10,6 +10,7 @@ export type InterviewCompletedEvent = PlatformEventEnvelope & {
   type: "interview.completed";
   interviewId: string;
   applicationId?: string;
+  candidateUserId?: string;
   score: number;
   reason: string;
 };

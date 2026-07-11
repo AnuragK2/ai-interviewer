@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "../lib/generated/prisma"
@@ -11,16 +8,21 @@ datasource db {
 }
 
 model Interview {
-  id                  String          @id @default(uuid())
-  applicationId       String?         @unique
-  applicationContext  Json            @default("{}")
-  githubMetaData      Json            @default("{}")
-  resume              Json            @default("{}")
-  status              InterviewStatus @default(PENDING)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-  score               Int             @default(0)
+  id                  String            @id @default(uuid())
+  applicationId       String?           @unique
+  applicationContext  Json              @default("{}")
+  githubMetaData      Json              @default("{}")
+  resume              Json              @default("{}")
+  status              InterviewStatus     @default(PENDING)
+  endReason           String?
+  startedAt           DateTime?
+  endedAt             DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  score               Int                 @default(0)
   conversations       Message[]
+  report              InterviewReport?
+  proctoringAssets    ProctoringAsset[]
 }
 
 model Message {
@@ -30,6 +32,34 @@ model Message {
   interviewId String
   createdAt   DateTime           @default(now())
   interview   Interview          @relation(fields: [interviewId], references: [id])
+}
+
+model InterviewReport {
+  id             String    @id @default(uuid())
+  interviewId    String    @unique
+  interview      Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  narrative      String
+  recommendation String
+  strengths      String[]
+  gaps           String[]
+  communication  Int
+  technicalDepth Int
+  roleFit        Int
+  clarity        Int
+  generatedAt    DateTime  @default(now())
+}
+
+model ProctoringAsset {
+  id          String              @id @default(uuid())
+  interviewId String
+  interview   Interview           @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  type        ProctoringAssetType
+  objectKey   String
+  mimeType    String
+  signal      String?
+  capturedAt  DateTime            @default(now())
+
+  @@index([interviewId])
 }
 
 enum MessageParticipant {
@@ -43,4 +73,9 @@ enum InterviewStatus {
   COMPLETED
   CANCELLED
   FAILED
+}
+
+enum ProctoringAssetType {
+  SNAPSHOT
+  RECORDING
 }

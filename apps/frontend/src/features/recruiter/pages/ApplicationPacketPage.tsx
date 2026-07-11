@@ -10,6 +10,7 @@ import { JobSnapshotView } from "@/features/applications/components/JobSnapshotV
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { getCandidateName, getJobTitle } from "@/features/applications/lib/parse-snapshot";
+import { InterviewReviewPanel } from "@/features/recruiter/components/InterviewReviewPanel";
 import * as applicationApi from "@/features/applications/services/application-api";
 
 export function RecruiterApplicationPacketPage() {
@@ -179,6 +180,12 @@ export function RecruiterApplicationPacketPage() {
           <CardContent>{packet ? <CandidateSnapshotView snapshot={packet.candidateSnapshot} /> : null}</CardContent>
         </GlowingCard>
       </div>
+
+      {packet?.application.interviewId &&
+      (packet.application.status === "INTERVIEW_COMPLETED" ||
+        packet.application.status === "INTERVIEW_CANCELLED") ? (
+        <InterviewReviewPanel interviewId={packet.application.interviewId} />
+      ) : null}
     </PageContainer>
   );
 }

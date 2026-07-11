@@ -1,41 +1,29 @@
 import type { GithubProfileData, ParsedResume } from "./resume";
+import type { InterviewSummary } from "./interview";
 
 /** Resume parsing & profile data */
 export type { GithubProfileData, GithubRepoSummary, ParsedResume } from "./resume";
 
 /** REST API contracts */
-export type InterviewSummary = {
-  id: string;
-  status: string;
-  score: number;
-  createdAt: string;
-};
+export type {
+  CreateInterviewFromApplicationRequest,
+  CreateInterviewFromApplicationResponse,
+  InterviewFeedbackResponse,
+  InterviewMediaAssetResponse,
+  InterviewReportDimensions,
+  InterviewReportResponse,
+  InterviewResultMessage,
+  InterviewResultsResponse,
+  InterviewSummary,
+  NotificationListResponse,
+  NotificationResponse,
+} from "./interview";
+export { CreateInterviewFromApplicationSchema } from "./interview";
 
 export type PreInterviewResponse = {
   interview: InterviewSummary;
   resume: ParsedResume;
   github: GithubProfileData;
-};
-
-export type InterviewResultMessage = {
-  id: string;
-  participant: "User" | "Assistant";
-  message: string;
-  createdAt: string;
-};
-
-export type InterviewResultsResponse = {
-  interview: InterviewSummary & { updatedAt: string };
-  candidate: {
-    name: string | null;
-    githubUsername: string | null;
-  };
-  stats: {
-    userMessages: number;
-    assistantMessages: number;
-    durationMinutes: number;
-  };
-  messages: InterviewResultMessage[];
 };
 
 /** WebSocket interview protocol */
@@ -125,13 +113,6 @@ export type {
   RecruiterApplicationPacketResponse,
 } from "./application";
 export { ApplyToJobRequestSchema, canStartInterview } from "./application";
-export type {
-  CreateInterviewFromApplicationRequest,
-  CreateInterviewFromApplicationResponse,
-  NotificationListResponse,
-  NotificationResponse,
-} from "./interview";
-export { CreateInterviewFromApplicationSchema } from "./interview";
 export type {
   CandidateProfileResponse,
   EducationEntry,

@@ -25,6 +25,7 @@ import {
   PROCTORING_TERMINATION_MESSAGE,
   PROCTORING_VIOLATION_LIMIT,
 } from "../../domain/proctoring/proctoring.messages";
+import { generateInterviewReport } from "../reports/interview-report.service";
 import { interviewRepository } from "../../infrastructure/db/repositories/interview.repository";
 import { messageRepository } from "../../infrastructure/db/repositories/message.repository";
 import { OpenAIRealtimeSocket } from "../../infrastructure/openai/realtime-socket";
@@ -41,6 +42,7 @@ export class InterviewSessionService {
   private openai: OpenAIRealtimeSocket | null = null;
   private interviewId: string | null = null;
   private applicationId: string | null = null;
+  private candidateUserId: string | null = null;
   private ended = false;
   private agentTranscript = "";
   private startedAt = 0;
@@ -100,6 +102,11 @@ export class InterviewSessionService {
 
     this.interviewId = interviewId;
     this.applicationId = interview.applicationId ?? null;
+
+    const applicationContext = (interview.applicationContext ?? {}) as {
+      candidateSnapshot?: { userId?: string };
+    };
+    this.candidateUserId = applicationContext.candidateSnapshot?.userId ?? null;
 
     const resume = (interview.resume ?? {}) as ResumeData;
     const github = (interview.githubMetaData ?? {}) as GithubData;
@@ -469,11 +476,14 @@ export class InterviewSessionService {
       score = reason === "cheat" ? 0 : scoreInterview(messages);
 
       if (reason === "completed" || reason === "client_end") {
-        await interviewRepository.complete(this.interviewId, score);
+        await interviewRepository.complete(this.interviewId, score, reason);
+        void generateInterviewReport(this.interviewId).catch((error) => {
+          console.error(`[interview-session] report generation failed for ${this.interviewId}:`, error);
+        });
       } else if (reason === "cheat") {
-        await interviewRepository.cancel(this.interviewId, score);
+        await interviewRepository.cancel(this.interviewId, score, reason);
       } else {
-        await interviewRepository.fail(this.interviewId, score);
+        await interviewRepository.fail(this.interviewId, score, reason);
       }
     }
 
@@ -512,6 +522,7 @@ export class InterviewSessionService {
           correlationId,
           interviewId: this.interviewId,
           applicationId: this.applicationId ?? undefined,
+          candidateUserId: this.candidateUserId ?? undefined,
           score,
           reason,
         }),

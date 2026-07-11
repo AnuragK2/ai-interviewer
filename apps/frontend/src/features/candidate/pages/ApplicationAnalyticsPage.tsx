@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
-import type { CandidateApplicationDetailResponse } from "@ai-interviewer/api-types";
+import type { CandidateApplicationDetailResponse, InterviewFeedbackResponse } from "@ai-interviewer/api-types";
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { Button } from "@/components/ui/button";
 import { ApplicationAnalysisCard } from "@/features/applications/components/ApplicationAnalysisCard";
 import { ApplicationPipeline } from "@/features/applications/components/ApplicationPipeline";
+import { PostInterviewFeedbackCard } from "@/features/applications/components/PostInterviewFeedbackCard";
+import * as interviewApi from "@/features/interview/services/interview-api";
 import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import * as applicationApi from "@/features/applications/services/application-api";
@@ -14,6 +16,7 @@ export function CandidateApplicationAnalyticsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<CandidateApplicationDetailResponse | null>(null);
+  const [feedback, setFeedback] = useState<InterviewFeedbackResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
 
@@ -48,6 +51,35 @@ export function CandidateApplicationAnalyticsPage() {
 
     return () => window.clearInterval(interval);
   }, [detail, loadDetail]);
+
+  useEffect(() => {
+    if (!detail?.application.interviewId || detail.application.status !== "INTERVIEW_COMPLETED") {
+      setFeedback(null);
+      return;
+    }
+
+    const interviewId = detail.application.interviewId;
+    let cancelled = false;
+
+    async function loadFeedback() {
+      try {
+        const next = await interviewApi.getInterviewFeedback(interviewId);
+        if (!cancelled) setFeedback(next);
+      } catch {
+        if (!cancelled) setFeedback(null);
+      }
+    }
+
+    void loadFeedback();
+    const interval = window.setInterval(() => {
+      void loadFeedback();
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [detail?.application.interviewId, detail?.application.status]);
 
   async function handleStartInterview() {
     if (!id || !detail?.application.interviewId) return;
@@ -122,21 +154,20 @@ export function CandidateApplicationAnalyticsPage() {
               <p className="text-sm font-medium">Interview</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <p className="text-xs text-muted-foreground">Interview id</p>
-                  <p className="text-sm font-mono">{detail.application.interviewId ?? "Not assigned"}</p>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p className="text-sm">{detail.application.status}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Invited at</p>
                   <p className="text-sm">{detail.application.invitedAt?.slice(0, 16) ?? "—"}</p>
                 </div>
               </div>
-              {detail.application.status === "INTERVIEW_COMPLETED" && detail.application.interviewId ? (
-                <Button asChild variant="outline" size="sm" className="border-white/10 bg-white/5">
-                  <Link to={`/results/${detail.application.interviewId}`}>View interview results</Link>
-                </Button>
-              ) : null}
             </div>
           </GlowingCard>
+
+          {feedback && detail.application.interviewId ? (
+            <PostInterviewFeedbackCard feedback={feedback} interviewId={detail.application.interviewId} />
+          ) : null}
         </div>
       )}
     </PageContainer>

@@ -7,6 +7,9 @@ import { useProctoring } from "@/features/proctoring/hooks/use-proctoring";
 import * as applicationApi from "@/features/applications/services/application-api";
 import { getAccessToken } from "@/shared/lib/auth-storage";
 import type { PreInterviewResponse } from "@/shared/api/types";
+import { useInterviewRecording } from "@/features/interview/hooks/use-interview-recording";
+import { captureVideoFrame } from "@/features/interview/lib/capture-video-frame";
+import * as interviewApi from "@/features/interview/services/interview-api";
 import {
   connectRealtimeInterview,
   type BackendInterviewEvent,
@@ -46,6 +49,34 @@ export function Interview() {
 
   const legacyProfile = useMemo(() => (id ? loadInterviewSession(id) : null), [id]);
   const profile = legacyProfile ?? platformProfile;
+  const { stopAndGetBlob } = useInterviewRecording(
+    mediaStream,
+    checksPassed && connectionStatus === "connected",
+  );
+
+  async function uploadProctoringEvidence(signal: CheatSignal) {
+    if (!id || !videoRef.current) return;
+    try {
+      const frame = await captureVideoFrame(videoRef.current);
+      if (frame) {
+        await interviewApi.uploadProctoringSnapshot(id, frame, signal);
+      }
+    } catch {
+      // Non-blocking: interview should continue even if snapshot upload fails.
+    }
+  }
+
+  async function uploadSessionRecording() {
+    if (!id) return;
+    try {
+      const blob = await stopAndGetBlob();
+      if (blob && blob.size > 0) {
+        await interviewApi.uploadInterviewRecording(id, blob);
+      }
+    } catch {
+      // Non-blocking: results page still works without recording.
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -107,6 +138,7 @@ export function Interview() {
     enabled: checksPassed && !!mediaStream,
     cameraEnabled: isCameraEnabled,
     onViolation: (signal) => {
+      void uploadProctoringEvidence(signal);
       realtimeRef.current?.sendCheatSignal(signal);
     },
     onSoftWarning: (message) => {
@@ -241,23 +273,25 @@ export function Interview() {
     }
 
     function handleInterviewEnded(event: Extract<BackendInterviewEvent, { type: "interview.ended" }>) {
-      cleanupMedia();
+      void uploadSessionRecording().finally(() => {
+        cleanupMedia();
 
-      if (event.reason === "cheat") {
-        saveInterviewEndState({
-          reason: "cheat",
-          message: event.message,
-          score: event.score,
-          interviewId: id!,
-          candidateName: profile?.resume.name ?? profile?.github.username,
-        });
+        if (event.reason === "cheat") {
+          saveInterviewEndState({
+            reason: "cheat",
+            message: event.message,
+            score: event.score,
+            interviewId: id!,
+            candidateName: profile?.resume.name ?? profile?.github.username,
+          });
+          clearInterviewSession(id!);
+          navigate(`/interview/${id}/proctoring-ended`, { replace: true });
+          return;
+        }
+
         clearInterviewSession(id!);
-        navigate(`/interview/${id}/proctoring-ended`, { replace: true });
-        return;
-      }
-
-      clearInterviewSession(id!);
-      navigate(`/results/${id}`, { replace: true });
+        navigate(`/results/${id}`, { replace: true });
+      });
     }
 
     void startRealtime();

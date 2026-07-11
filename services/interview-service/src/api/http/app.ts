@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import { interviewMediaRouter } from "./routes/interview-media.routes";
 import { interviewResultsRouter } from "./routes/interview-results.routes";
 import { interviewsRouter } from "./routes/interviews.routes";
 import { preInterviewRouter } from "./routes/pre-interview.routes";
@@ -16,6 +17,7 @@ export function createHttpApp() {
 
   app.use("/api/v1/pre-interview", preInterviewRouter);
   app.use("/api/v1/interviews", interviewsRouter);
+  app.use("/api/v1/interview", interviewMediaRouter);
   app.use("/api/v1/interview", interviewResultsRouter);
 
   return app;

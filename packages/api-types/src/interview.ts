@@ -1,5 +1,33 @@
 import { z } from "zod";
 
+export type InterviewSummary = {
+  id: string;
+  status: string;
+  score: number;
+  createdAt: string;
+};
+
+export type InterviewResultMessage = {
+  id: string;
+  participant: "User" | "Assistant";
+  message: string;
+  createdAt: string;
+};
+
+export type InterviewResultsResponse = {
+  interview: InterviewSummary & { updatedAt: string };
+  candidate: {
+    name: string | null;
+    githubUsername: string | null;
+  };
+  stats: {
+    userMessages: number;
+    assistantMessages: number;
+    durationMinutes: number;
+  };
+  messages: InterviewResultMessage[];
+};
+
 export type CreateInterviewFromApplicationRequest = {
   applicationId: string;
   jobSnapshot: unknown;
@@ -42,4 +70,46 @@ export type NotificationResponse = {
 
 export type NotificationListResponse = {
   notifications: NotificationResponse[];
+};
+
+export type InterviewReportDimensions = {
+  communication: number;
+  technicalDepth: number;
+  roleFit: number;
+  clarity: number;
+};
+
+export type InterviewReportResponse = {
+  narrative: string;
+  recommendation: string;
+  strengths: string[];
+  gaps: string[];
+  dimensions: InterviewReportDimensions;
+  generatedAt: string;
+};
+
+export type InterviewMediaAssetResponse = {
+  id: string;
+  type: "SNAPSHOT" | "RECORDING";
+  mimeType: string;
+  signal: string | null;
+  capturedAt: string;
+  url: string;
+};
+
+export type InterviewFeedbackResponse = {
+  interview: {
+    id: string;
+    status: string;
+    score: number;
+    endReason: string | null;
+    startedAt: string | null;
+    endedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    applicationId: string | null;
+  };
+  results: InterviewResultsResponse | null;
+  report: InterviewReportResponse | null;
+  media: InterviewMediaAssetResponse[];
 };

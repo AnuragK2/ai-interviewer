@@ -614,11 +614,11 @@ MVP: email via Resend/SendGrid; in-app via notification table + polling.
 
 **Goal:** Full recruiter feedback packet.
 
-- [ ] Post-interview AI report generation
-- [ ] Interview recording persistence
-- [ ] Proctoring snapshot capture (basic)
-- [ ] Frontend: recruiter interview review page
-- [ ] Frontend: candidate completed interview feedback on analytics
+- [x] Post-interview AI report generation
+- [x] Interview recording persistence
+- [x] Proctoring snapshot capture (basic)
+- [x] Frontend: recruiter interview review page
+- [x] Frontend: candidate completed interview feedback on analytics
 
 **Exit criteria:** Recruiter sees transcript, score, AI narrative, recording.
 

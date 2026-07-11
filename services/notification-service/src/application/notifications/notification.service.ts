@@ -64,6 +64,32 @@ export async function createInterviewInviteNotification(input: {
   return toNotificationResponse(notification);
 }
 
+export async function createInterviewCompletedNotification(input: {
+  userId?: string;
+  applicationId?: string;
+  interviewId: string;
+  score: number;
+}) {
+  if (!input.applicationId || !input.userId) return null;
+
+  const linkUrl = `${env.frontendUrl}/candidate/applications/${input.applicationId}`;
+  const title = "Interview completed";
+  const body = `Your AI interview has been completed. Performance score: ${input.score}/100. View your application analytics for the full feedback report.`;
+
+  const notification = await prisma.notification.create({
+    data: {
+      userId: input.userId,
+      type: "interview.completed",
+      title,
+      body,
+      linkUrl,
+    },
+  });
+
+  console.log(`[notification-service] interview completed notification for application ${input.applicationId}`);
+  return toNotificationResponse(notification);
+}
+
 async function sendInviteEmail(input: { to?: string; subject: string; html: string; text: string }) {
   if (!input.to) {
     console.log(`[notification-service] email skipped (no recipient): ${input.subject}`);

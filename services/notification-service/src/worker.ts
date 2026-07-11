@@ -1,7 +1,7 @@
-import type { ApplicationInvitedEvent } from "@ai-interviewer/api-types";
+import type { ApplicationInvitedEvent, InterviewCompletedEvent } from "@ai-interviewer/api-types";
 import { EventSubjects } from "@ai-interviewer/api-types";
 import { closeEventBus, getEventBus } from "@ai-interviewer/event-bus";
-import { createInterviewInviteNotification } from "./application/notifications/notification.service";
+import { createInterviewInviteNotification, createInterviewCompletedNotification } from "./application/notifications/notification.service";
 import { env } from "./config/env";
 import { prisma } from "./infrastructure/db/prisma.client";
 
@@ -22,6 +22,21 @@ export async function startNotificationWorker() {
   });
 
   console.log(`${env.serviceName} subscribed to ${EventSubjects.APPLICATION_INVITED}`);
+
+  await bus.subscribe<InterviewCompletedEvent>(EventSubjects.INTERVIEW_COMPLETED, async (event) => {
+    try {
+      await createInterviewCompletedNotification({
+        userId: event.candidateUserId,
+        applicationId: event.applicationId,
+        interviewId: event.interviewId,
+        score: event.score,
+      });
+    } catch (error) {
+      console.error(`[notification-service] failed to handle interview.completed for ${event.interviewId}:`, error);
+    }
+  });
+
+  console.log(`${env.serviceName} subscribed to ${EventSubjects.INTERVIEW_COMPLETED}`);
 
   const shutdown = async () => {
     await closeEventBus();

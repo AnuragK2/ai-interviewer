@@ -29,18 +29,48 @@ export const interviewRepository = {
   },
 
   markInProgress(id: string) {
-    return this.updateStatus(id, "IN_PROGRESS");
+    return prisma.interview.update({
+      where: { id },
+      data: {
+        status: "IN_PROGRESS",
+        startedAt: new Date(),
+      },
+    });
   },
 
-  complete(id: string, score: number) {
-    return this.updateStatus(id, "COMPLETED", score);
+  complete(id: string, score: number, endReason?: string) {
+    return prisma.interview.update({
+      where: { id },
+      data: {
+        status: "COMPLETED",
+        score,
+        endReason: endReason ?? "completed",
+        endedAt: new Date(),
+      },
+    });
   },
 
-  cancel(id: string, score: number) {
-    return this.updateStatus(id, "CANCELLED", score);
+  cancel(id: string, score: number, endReason?: string) {
+    return prisma.interview.update({
+      where: { id },
+      data: {
+        status: "CANCELLED",
+        score,
+        endReason: endReason ?? "cheat",
+        endedAt: new Date(),
+      },
+    });
   },
 
-  fail(id: string, score: number) {
-    return this.updateStatus(id, "FAILED", score);
+  fail(id: string, score: number, endReason?: string) {
+    return prisma.interview.update({
+      where: { id },
+      data: {
+        status: "FAILED",
+        score,
+        endReason: endReason ?? "error",
+        endedAt: new Date(),
+      },
+    });
   },
 };
