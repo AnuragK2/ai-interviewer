@@ -11,6 +11,10 @@ import {
   listRecruiterApplicationsForJob,
   markInterviewPending,
 } from "../../../application/applications/application.service";
+import {
+  getCandidateDashboard,
+  getRecruiterDashboard,
+} from "../../../application/dashboard/dashboard.service";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { requireCandidateAuth, requireRecruiterAuth } from "../middleware/auth.middleware";
 
@@ -34,6 +38,16 @@ applicationsRouter.post("/", requireCandidateAuth, async (req: AuthenticatedRequ
 applicationsRouter.get("/me", requireCandidateAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const result = await listCandidateApplications(req.auth!.sub);
+    res.json(result);
+  } catch (error) {
+    handleApplicationsRouteError(res, error);
+  }
+});
+
+applicationsRouter.get("/me/dashboard", requireCandidateAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const token = req.headers.authorization!.slice("Bearer ".length);
+    const result = await getCandidateDashboard(req.auth!.sub, token);
     res.json(result);
   } catch (error) {
     handleApplicationsRouteError(res, error);
@@ -84,6 +98,20 @@ applicationsRouter.post("/:id/start-interview", requireCandidateAuth, async (req
     handleApplicationsRouteError(res, error);
   }
 });
+
+applicationsRouter.get(
+  "/_recruiter/dashboard",
+  requireRecruiterAuth,
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const token = req.headers.authorization!.slice("Bearer ".length);
+      const result = await getRecruiterDashboard(req.auth!.companyId!, token);
+      res.json(result);
+    } catch (error) {
+      handleApplicationsRouteError(res, error);
+    }
+  },
+);
 
 applicationsRouter.get(
   "/_recruiter/job/:jobId",

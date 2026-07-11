@@ -12,7 +12,9 @@ import {
   listJobsPublic,
   updateJob,
 } from "../../../application/jobs/job.service";
+import { listRecommendedJobsForCandidate } from "../../../application/jobs/job-recommendations.service";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware";
+import { requireCandidateAuth } from "../middleware/candidate-auth.middleware";
 import { requireRecruiterAuth } from "../middleware/auth.middleware";
 
 export const jobsRouter = Router();
@@ -30,6 +32,16 @@ jobsRouter.get("/", async (req, res) => {
         : undefined;
     const companyId = typeof req.query.companyId === "string" ? req.query.companyId : undefined;
     const result = await listJobsPublic({ status, companyId });
+    res.json(result);
+  } catch (error) {
+    handleJobRouteError(res, error);
+  }
+});
+
+jobsRouter.get("/_candidate/recommended", requireCandidateAuth, async (req: AuthenticatedRequest, res) => {
+  try {
+    const token = req.headers.authorization!.slice("Bearer ".length);
+    const result = await listRecommendedJobsForCandidate(token);
     res.json(result);
   } catch (error) {
     handleJobRouteError(res, error);

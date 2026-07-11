@@ -1,6 +1,7 @@
-import type { CreateJobRequest, JobResponse, ListJobsResponse, UpdateJobRequest } from "@ai-interviewer/api-types";
+import type { RecommendedJobsResponse } from "@ai-interviewer/api-types";
 import { BACKEND_URL } from "@/shared/api/config";
 import { getAccessToken } from "@/shared/lib/auth-storage";
+import type { CreateJobRequest, JobResponse, ListJobsResponse, UpdateJobRequest } from "@ai-interviewer/api-types";
 
 async function jobFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAccessToken();
@@ -25,6 +26,11 @@ async function jobFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function listPublicJobs(): Promise<JobResponse[]> {
   const data = await jobFetch<ListJobsResponse>("/api/v1/jobs?status=OPEN");
+  return data.jobs;
+}
+
+export async function listRecommendedJobs(): Promise<RecommendedJobsResponse["jobs"]> {
+  const data = await jobFetch<RecommendedJobsResponse>("/api/v1/jobs/_candidate/recommended");
   return data.jobs;
 }
 
@@ -53,4 +59,3 @@ export async function updateJob(jobId: string, input: UpdateJobRequest): Promise
   });
   return data.job;
 }
-

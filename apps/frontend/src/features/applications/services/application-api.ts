@@ -1,11 +1,14 @@
 import type {
+  ApplicationListItem,
   ApplicationResponse,
   ApplyToJobRequest,
   CandidateApplicationDetailResponse,
   CandidateApplicationListResponse,
+  CandidateDashboardResponse,
   InterviewAccessResponse,
   RecruiterApplicationListResponse,
   RecruiterApplicationPacketResponse,
+  RecruiterDashboardResponse,
 } from "@ai-interviewer/api-types";
 import { BACKEND_URL } from "@/shared/api/config";
 import { getAccessToken } from "@/shared/lib/auth-storage";
@@ -39,9 +42,17 @@ export async function applyToJob(input: ApplyToJobRequest): Promise<ApplicationR
   return data.application;
 }
 
-export async function listMyApplications(): Promise<ApplicationResponse[]> {
+export async function listMyApplications(): Promise<ApplicationListItem[]> {
   const data = await applicationFetch<CandidateApplicationListResponse>("/api/v1/applications/me");
   return data.applications;
+}
+
+export async function getCandidateDashboard(): Promise<CandidateDashboardResponse> {
+  return applicationFetch<CandidateDashboardResponse>("/api/v1/applications/me/dashboard");
+}
+
+export async function getRecruiterDashboard(): Promise<RecruiterDashboardResponse> {
+  return applicationFetch<RecruiterDashboardResponse>("/api/v1/applications/_recruiter/dashboard");
 }
 
 export async function getCandidateApplication(applicationId: string): Promise<CandidateApplicationDetailResponse> {
@@ -76,4 +87,3 @@ export async function listApplicantsForJob(jobId: string): Promise<ApplicationRe
 export async function getRecruiterApplicationPacket(applicationId: string): Promise<RecruiterApplicationPacketResponse> {
   return applicationFetch<RecruiterApplicationPacketResponse>(`/api/v1/applications/_recruiter/${applicationId}`);
 }
-

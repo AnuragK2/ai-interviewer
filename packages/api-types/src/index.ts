@@ -98,11 +98,14 @@ export type {
   JobResponse,
   JobStatus,
   ListJobsResponse,
+  RecommendedJobResponse,
+  RecommendedJobsResponse,
   UpdateJobRequest,
   WorkStyle as JobWorkStyle,
 } from "./job";
 export { CreateJobRequestSchema, UpdateJobRequestSchema } from "./job";
 export type {
+  ApplicationListItem,
   ApplicationResponse,
   ApplicationStatus,
   ApplyToJobRequest,
@@ -113,6 +116,14 @@ export type {
   RecruiterApplicationPacketResponse,
 } from "./application";
 export { ApplyToJobRequestSchema, canStartInterview } from "./application";
+export type {
+  CandidateDashboardApplicationSummary,
+  CandidateDashboardResponse,
+  ApplicationStatusCount,
+  RecruiterDashboardResponse,
+  RecruiterExpiringJobAlert,
+  RecruiterPipelineStage,
+} from "./dashboard";
 export type {
   CandidateProfileResponse,
   EducationEntry,

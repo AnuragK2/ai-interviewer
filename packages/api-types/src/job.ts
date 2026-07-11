@@ -29,6 +29,17 @@ export type ListJobsResponse = {
   jobs: JobResponse[];
 };
 
+export type RecommendedJobResponse = JobResponse & {
+  matchScore: number;
+  matchSummary: string | null;
+  isRecommended: boolean;
+  hasApplied: boolean;
+};
+
+export type RecommendedJobsResponse = {
+  jobs: RecommendedJobResponse[];
+};
+
 export type CreateJobRequest = {
   title: string;
   description: string;

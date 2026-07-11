@@ -184,7 +184,12 @@ export async function listCandidateApplications(candidateUserId: string): Promis
     orderBy: { createdAt: "desc" },
   });
 
-  return { applications: apps.map((app) => toApplicationResponse(app, app.candidateSnapshot)) };
+  return {
+    applications: apps.map((app) => ({
+      ...toApplicationResponse(app, app.candidateSnapshot),
+      jobTitle: extractJobTitle(app.jobSnapshot),
+    })),
+  };
 }
 
 export async function listRecruiterApplicationsForJob(

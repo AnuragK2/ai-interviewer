@@ -628,10 +628,10 @@ MVP: email via Resend/SendGrid; in-app via notification table + polling.
 
 **Goal:** Personalized jobs + at-a-glance views.
 
-- [ ] Job recommendation ranking (profile + match service)
-- [ ] Candidate dashboard
-- [ ] Recruiter dashboard
-- [ ] Applications list page polish (R8)
+- [x] Job recommendation ranking (profile + match service)
+- [x] Candidate dashboard
+- [x] Recruiter dashboard
+- [x] Applications list page polish (R8)
 
 **Exit criteria:** Dashboards match R9 acceptance; jobs ranked on listing.
 

@@ -32,13 +32,17 @@ export type ApplicationResponse = {
   updatedAt: string;
 };
 
+export type ApplicationListItem = ApplicationResponse & {
+  jobTitle: string | null;
+};
+
 export type ApplyToJobRequest = {
   jobId: string;
   coverLetter?: string | null;
 };
 
 export type CandidateApplicationListResponse = {
-  applications: ApplicationResponse[];
+  applications: ApplicationListItem[];
 };
 
 export type CandidateApplicationDetailResponse = {
