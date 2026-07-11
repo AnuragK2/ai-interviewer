@@ -13,7 +13,9 @@ async function analyzeApplication(applicationId: string) {
 
   if (app.status === "ANALYZED") return;
 
-  const result = analyzeFit(app.jobSnapshot as unknown, app.candidateSnapshot as unknown);
+  const result = analyzeFit(app.jobSnapshot as unknown, app.candidateSnapshot as unknown, {
+    coverLetter: app.coverLetter,
+  });
 
   await prisma.application.update({
     where: { id: applicationId },
