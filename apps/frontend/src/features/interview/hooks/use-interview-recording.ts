@@ -22,7 +22,7 @@ export function useInterviewRecording(mediaStream: MediaStream | null, enabled: 
       if (event.data.size > 0) chunksRef.current.push(event.data);
     };
 
-    recorder.start(5000);
+    recorder.start(1_000);
     recorderRef.current = recorder;
 
     return () => {

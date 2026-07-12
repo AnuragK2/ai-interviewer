@@ -49,20 +49,20 @@ export function Interview() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const accessRef = useRef<InterviewAccessResponse | null>(null);
 
-  const { stopAndGetBlob } = useInterviewRecording(
-    mediaStream,
-    checksPassed && connectionStatus === "connected",
-  );
+  const isInterviewSessionActive = checksPassed && connectionStatus === "connected";
+  const { stopAndGetBlob } = useInterviewRecording(mediaStream, isInterviewSessionActive);
 
   async function uploadProctoringEvidence(signal: CheatSignal) {
     if (!id || !videoRef.current) return;
     try {
       const frame = await captureVideoFrame(videoRef.current);
-      if (frame) {
-        await interviewApi.uploadProctoringSnapshot(id, frame, signal);
+      if (!frame) {
+        console.warn("[interview] Proctoring snapshot skipped — video frame not ready.", { signal });
+        return;
       }
-    } catch {
-      // Non-blocking: interview should continue even if snapshot upload fails.
+      await interviewApi.uploadProctoringSnapshot(id, frame, signal);
+    } catch (error) {
+      console.error("[interview] Proctoring snapshot upload failed:", { signal, error });
     }
   }
 
@@ -70,11 +70,13 @@ export function Interview() {
     if (!id) return;
     try {
       const blob = await stopAndGetBlob();
-      if (blob && blob.size > 0) {
-        await interviewApi.uploadInterviewRecording(id, blob);
+      if (!blob || blob.size === 0) {
+        console.warn("[interview] Recording upload skipped — no captured media.", { interviewId: id });
+        return;
       }
-    } catch {
-      // Non-blocking: results page still works without recording.
+      await interviewApi.uploadInterviewRecording(id, blob);
+    } catch (error) {
+      console.error("[interview] Recording upload failed:", { interviewId: id, error });
     }
   }
 
@@ -250,8 +252,9 @@ export function Interview() {
       const currentAccess = accessRef.current;
       const applicationId = currentAccess?.application.id;
       const candidateName = currentAccess?.application.candidateName ?? currentAccess?.jobTitle ?? "Candidate";
+      const recordingUpload = uploadSessionRecording();
 
-      void uploadSessionRecording().finally(() => {
+      void recordingUpload.finally(() => {
         cleanupMedia();
 
         if (event.reason === "cheat") {
@@ -310,6 +313,7 @@ export function Interview() {
       const now = Date.now();
       if (now - lastFocusSignalAt < 2_000) return;
       lastFocusSignalAt = now;
+      void uploadProctoringEvidence(signal);
       sendCheat(signal);
     };
 

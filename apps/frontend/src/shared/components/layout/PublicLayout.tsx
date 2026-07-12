@@ -6,7 +6,7 @@ export function PublicLayout() {
   return (
     <PageShell>
       <PublicNavbar />
-      <main className="pt-24 pb-10">
+      <main className="pt-24">
         <Outlet />
       </main>
     </PageShell>

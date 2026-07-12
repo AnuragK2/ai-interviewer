@@ -140,10 +140,6 @@ export async function connectRealtimeInterview({
       onConnectionStateChange?.("failed");
     }
 
-    if (event.type === "interview.ended") {
-      onConnectionStateChange?.("closed");
-    }
-
     onEvent?.(event);
   });
 

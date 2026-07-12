@@ -2,6 +2,12 @@ import { Link } from "react-router";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 
+const NAV_LINKS = [
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Testimonials", href: "#testimonials" },
+] as const;
+
 export function PublicNavbar() {
   return (
     <motion.header
@@ -15,8 +21,21 @@ export function PublicNavbar() {
           <span className="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500" />
           Get<span className="text-indigo-300">Hired</span>
         </Link>
+
+        <div className="hidden items-center gap-6 md:flex">
+          {NAV_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
         <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
             <Link to="/login">Sign in</Link>
           </Button>
           <Button asChild size="sm" className="bg-indigo-600 hover:bg-indigo-500">
