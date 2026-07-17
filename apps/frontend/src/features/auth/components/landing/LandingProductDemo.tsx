@@ -182,7 +182,7 @@ export function LandingProductDemo() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const activeStep = PRODUCT_DEMO_STEPS[activeIndex];
+  const activeStep = PRODUCT_DEMO_STEPS[activeIndex] ?? PRODUCT_DEMO_STEPS[0]!;
   const MockComponent = MOCK_COMPONENTS[activeStep.id];
 
   return (

@@ -70,6 +70,10 @@ export function createNotificationProxy() {
   return createServiceProxy(env.notificationServiceUrl, "notification-service");
 }
 
+export function createBillingProxy() {
+  return createServiceProxy(env.billingServiceUrl, "billing-service");
+}
+
 export function createGatewayApp() {
   const app = express();
   const identityProxy = createIdentityProxy();
@@ -77,6 +81,7 @@ export function createGatewayApp() {
   const jobProxy = createJobProxy();
   const applicationProxy = createApplicationProxy();
   const notificationProxy = createNotificationProxy();
+  const billingProxy = createBillingProxy();
   const interviewProxy = createInterviewProxy();
 
   const authRateLimit = createRateLimiter({ windowMs: 60_000, max: 20, keyPrefix: "auth" });
@@ -130,6 +135,11 @@ export function createGatewayApp() {
       return;
     }
 
+    if (path.startsWith("/api/v1/billing")) {
+      apiRateLimit(req, res, () => billingProxy(req, res, next));
+      return;
+    }
+
     if (path.startsWith("/api")) {
       const run = () => interviewProxy(req, res, next);
       if (req.method === "POST" && (path.includes("/recording") || path.includes("/proctoring-snapshot"))) {
@@ -147,5 +157,14 @@ export function createGatewayApp() {
     res.status(404).json({ error: "Not found." });
   });
 
-  return { app, identityProxy, profileProxy, jobProxy, applicationProxy, notificationProxy, interviewProxy };
+  return {
+    app,
+    identityProxy,
+    profileProxy,
+    jobProxy,
+    applicationProxy,
+    notificationProxy,
+    billingProxy,
+    interviewProxy,
+  };
 }

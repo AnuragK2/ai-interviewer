@@ -24,6 +24,7 @@ import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { ButtonLoading, CardLoader } from "@/shared/components/loading";
 import { JobDescriptionGenerator } from "@/features/jobs/components/JobDescriptionGenerator";
 import { useAuth } from "@/features/auth/context/auth-context";
+import { useBilling } from "@/features/billing/context/billing-context";
 import * as jobApi from "@/features/jobs/services/job-api";
 
 type FormState = {
@@ -100,6 +101,7 @@ function formSnapshot(form: FormState) {
 
 export function RecruiterJobEditPage() {
   const { user } = useAuth();
+  const { writable } = useBilling();
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = id === "new" || !id;
@@ -188,6 +190,16 @@ export function RecruiterJobEditPage() {
         description={user?.company?.name}
       />
 
+      {!writable ? (
+        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          Billing lock: this workspace is read-only.{" "}
+          <Link to="/recruiter/billing" className="font-medium underline underline-offset-2">
+            Upgrade your plan
+          </Link>{" "}
+          to create or edit jobs.
+        </div>
+      ) : null}
+
       <GlowingCard>
         <CardHeader>
             <CardTitle>Job details</CardTitle>
@@ -197,7 +209,7 @@ export function RecruiterJobEditPage() {
             {loading ? (
               <CardLoader message="Loading job…" />
             ) : (
-              <>
+              <fieldset disabled={!writable} className="space-y-5 disabled:opacity-70">
                 {!isNew ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/10 p-4">
                     <div>
@@ -338,13 +350,13 @@ export function RecruiterJobEditPage() {
                 <div className="flex justify-end pt-2">
                   <Button
                     onClick={() => setConfirmOpen(true)}
-                    disabled={saving || !hasChanges}
+                    disabled={!writable || saving || !hasChanges}
                     className="bg-indigo-600 hover:bg-indigo-500"
                   >
                     {isNew ? "Create job" : "Save changes"}
                   </Button>
                 </div>
-              </>
+              </fieldset>
             )}
           </CardContent>
       </GlowingCard>

@@ -12,6 +12,8 @@ export const env = {
   githubClientId: process.env.GITHUB_CLIENT_ID,
   githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
   natsUrl: process.env.NATS_URL ?? "nats://localhost:4222",
+  billingServiceUrl: process.env.BILLING_SERVICE_URL ?? "http://localhost:3007",
+  internalServiceKey: process.env.INTERNAL_SERVICE_KEY ?? "dev-internal-service-key",
 } as const;
 
 export type OAuthProviderKey = "google" | "github";

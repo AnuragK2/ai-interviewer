@@ -18,6 +18,7 @@ import {
   getCandidateDashboard,
   getRecruiterDashboard,
 } from "../../../application/dashboard/dashboard.service";
+import { BillingGateError } from "../../../infrastructure/billing/billing-client";
 import type { AuthenticatedRequest } from "../middleware/auth.middleware";
 import { requireCandidateAuth, requireRecruiterAuth } from "../middleware/auth.middleware";
 
@@ -230,6 +231,15 @@ applicationsRouter.get("/_recruiter/:id/resume/download", requireRecruiterAuth, 
 function handleApplicationsRouteError(res: import("express").Response, error: unknown) {
   if (error instanceof ApplicationError) {
     res.status(error.statusCode).json({ error: error.message });
+    return;
+  }
+
+  if (error instanceof BillingGateError) {
+    res.status(error.statusCode).json({
+      error: error.message,
+      code: error.code,
+      lockedReason: error.lockedReason ?? null,
+    });
     return;
   }
 

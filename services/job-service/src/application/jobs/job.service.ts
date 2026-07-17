@@ -7,6 +7,7 @@ import type {
 } from "@ai-interviewer/api-types";
 import { prisma } from "../../infrastructure/db/prisma.client";
 import { recordRemoteTenantAudit } from "../../infrastructure/audit/audit-client";
+import { assertRecruiterWritable } from "../../infrastructure/billing/billing-client";
 
 export class JobError extends Error {
   constructor(
@@ -20,6 +21,10 @@ export class JobError extends Error {
 
 function isExpired(expiresAt: Date | null) {
   return Boolean(expiresAt && expiresAt.getTime() <= Date.now());
+}
+
+async function countOpenJobs(companyId: string) {
+  return prisma.job.count({ where: { companyId, status: "OPEN" } });
 }
 
 function toJobResponse(row: {
@@ -67,6 +72,10 @@ export async function createJob(
   input: CreateJobRequest,
   actor: { userId: string; companyId: string; email?: string },
 ): Promise<JobResponse> {
+  const openJobs = await countOpenJobs(actor.companyId);
+  const status = input.status ?? "DRAFT";
+  await assertRecruiterWritable(actor.companyId, openJobs, status === "OPEN" ? "open_job" : "write");
+
   const created = await prisma.job.create({
     data: {
       companyId: actor.companyId,
@@ -80,7 +89,7 @@ export async function createJob(
       currency: input.currency ?? "USD",
       workStyle: input.workStyle ?? null,
       employmentTypes: input.employmentTypes ?? [],
-      status: input.status ?? "DRAFT",
+      status,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
       createdBy: actor.userId,
     },
@@ -108,6 +117,11 @@ export async function updateJob(
   if (!existing || existing.companyId !== actor.companyId) {
     throw new JobError("Job not found.", 404);
   }
+
+  const openJobs = await countOpenJobs(actor.companyId);
+  const nextStatus = input.status ?? existing.status;
+  const openingJob = existing.status !== "OPEN" && nextStatus === "OPEN";
+  await assertRecruiterWritable(actor.companyId, openJobs, openingJob ? "open_job" : "write");
 
   const updated = await prisma.job.update({
     where: { id: jobId },

@@ -7,6 +7,7 @@ import type {
   UserRole,
 } from "@ai-interviewer/api-types";
 import { prisma, type PrismaTransactionClient } from "../../infrastructure/db/prisma.client";
+import { ensureFreeBillingSubscription } from "../../infrastructure/billing/billing-client";
 import { ensureUniqueCompanySlug, slugifyCompanyName } from "../../domain/company-slug";
 import { signAccessToken, toAuthUser } from "./jwt.service";
 import {
@@ -93,7 +94,7 @@ export async function registerRecruiter(input: RegisterRecruiterRequest): Promis
     return Boolean(company);
   });
 
-  const user = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
+  const { user, companyId } = await prisma.$transaction(async (tx: PrismaTransactionClient) => {
     const company = await tx.company.create({
       data: {
         name: input.companyName.trim(),
@@ -119,8 +120,10 @@ export async function registerRecruiter(input: RegisterRecruiterRequest): Promis
       },
     });
 
-    return createdUser;
+    return { user: createdUser, companyId: company.id };
   });
+
+  void ensureFreeBillingSubscription(companyId);
 
   return buildAuthResponse(user.id);
 }
@@ -216,6 +219,10 @@ async function findOrCreateUserFromOAuth(
           create: { userId: linkedAccount.userId, companyId: company.id, title: null },
           update: { companyId: company.id },
         });
+
+        return company.id;
+      }).then((companyId) => {
+        void ensureFreeBillingSubscription(companyId);
       });
     }
 
@@ -259,6 +266,10 @@ async function findOrCreateUserFromOAuth(
           create: { userId: existingUser.id, companyId: company.id, title: null },
           update: { companyId: company.id },
         });
+
+        return company.id;
+      }).then((companyId) => {
+        void ensureFreeBillingSubscription(companyId);
       });
     }
 
@@ -320,6 +331,10 @@ async function findOrCreateUserFromOAuth(
 
     return createdUser;
   });
+
+  if (user.companyId) {
+    void ensureFreeBillingSubscription(user.companyId);
+  }
 
   return { userId: user.id, isNewUser: true };
 }

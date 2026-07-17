@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum BillingInterval {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  FREE_ACTIVE
+  PENDING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Plan {
+  id                  String          @id @default(uuid())
+  tier                PlanTier
+  interval            BillingInterval
+  razorpayPlanId      String?
+  pricePaise          Int             @default(0)
+  currency            String          @default("INR")
+  maxOpenJobs         Int
+  maxInterviewInvites Int
+  maxRecruiters       Int
+  active              Boolean         @default(true)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  subscriptions TenantSubscription[]
+
+  @@unique([tier, interval])
+  @@index([active])
+}
+
+model TenantSubscription {
+  companyId              String             @id
+  planId                 String
+  plan                   Plan               @relation(fields: [planId], references: [id])
+  status                 SubscriptionStatus @default(FREE_ACTIVE)
+  razorpayCustomerId     String?
+  razorpaySubscriptionId String?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  lockedReason           String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  @@index([status])
+  @@index([razorpaySubscriptionId])
+}
+
+model UsagePeriod {
+  id               String   @id @default(uuid())
+  companyId        String
+  periodStart      DateTime
+  periodEnd        DateTime
+  interviewInvites Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([companyId, periodStart])
+  @@index([companyId])
+}
+
+model BillingEvent {
+  id              String   @id @default(uuid())
+  companyId       String?
+  eventType       String
+  razorpayEventId String   @unique
+  payload         Json
+  processedAt     DateTime @default(now())
+
+  @@index([companyId])
+  @@index([processedAt])
+}

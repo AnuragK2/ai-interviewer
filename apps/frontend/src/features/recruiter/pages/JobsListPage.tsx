@@ -9,21 +9,26 @@ import { PageContainer } from "@/shared/components/layout/PageContainer";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { CardLoader } from "@/shared/components/loading";
 import { useAuth } from "@/features/auth/context/auth-context";
+import { useBilling } from "@/features/billing/context/billing-context";
 import * as jobApi from "@/features/jobs/services/job-api";
 import { getJobStatusLabel } from "@/features/jobs/lib/job-status-labels";
 
 export function RecruiterJobsListPage() {
   const { user } = useAuth();
+  const { writable, refresh: refreshBilling } = useBilling();
   const [jobs, setJobs] = useState<JobResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void jobApi
       .listRecruiterJobs()
-      .then(setJobs)
+      .then((list) => {
+        setJobs(list);
+        void refreshBilling(list.filter((job) => job.status === "OPEN").length);
+      })
       .catch((error) => toast.error(error instanceof Error ? error.message : "Failed to load jobs."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [refreshBilling]);
 
   return (
     <PageContainer>
@@ -32,9 +37,15 @@ export function RecruiterJobsListPage() {
         title={user?.company?.name ?? "Job listings"}
         description="Create drafts, publish openings, and review applicants."
         actions={
-          <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
-            <Link to="/recruiter/jobs/new">New job</Link>
-          </Button>
+          writable ? (
+            <Button asChild className="bg-indigo-600 hover:bg-indigo-500">
+              <Link to="/recruiter/jobs/new">New job</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-100">
+              <Link to="/recruiter/billing">Upgrade to create jobs</Link>
+            </Button>
+          )
         }
       />
 

@@ -149,6 +149,7 @@ sequenceDiagram
 | `job-service` | 3004 | `jobs` | Job postings |
 | `application-service` | 3005 | `applications` | Applications, fit analysis fields, audit log |
 | `notification-service` | 3006 | `notifications` | In-app notifications (+ optional email) |
+| `billing-service` | 3007 | `billing` | Razorpay plans, subscriptions, usage, webhooks |
 | `matching-service` | — (worker) | reads `applications` DB | Async AI fit analysis on `application.created` |
 | `gateway` | 8080 | none | Reverse proxy, rate limits, WS relay |
 
@@ -324,6 +325,7 @@ Defined in `apps/gateway/src/app.ts`. All paths are prefixed with `/api/v1` unle
 | `/api/v1/jobs` | job-service | 300/min |
 | `/api/v1/applications` | application-service | 300/min |
 | `/api/v1/notifications` | notification-service | 300/min |
+| `/api/v1/billing` | billing-service | 300/min |
 | `/api/*` (remainder) | interview-service | 300/min; recording/snapshot uploads 30/min |
 | `/health` | gateway itself | — |
 | `WS /api/v1/interview/ws` | interview-service (via `ws-relay.ts`) | — |
@@ -407,6 +409,20 @@ Authenticated routes require `Authorization: Bearer <jwt>`.
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/notifications/me` | JWT | List notifications for user |
+
+### Billing (`/api/v1/billing`) — Razorpay per tenant
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/billing/plans` | JWT (recruiter) | List Free/Pro/Business × Monthly/Quarterly/Yearly |
+| GET | `/billing/me` | JWT (recruiter) | Current plan, usage, writable/locked state |
+| POST | `/billing/checkout` | JWT (recruiter) | Create Razorpay subscription for a paid plan |
+| POST | `/billing/verify` | JWT (recruiter) | Verify Checkout signature and activate |
+| POST | `/billing/cancel` | JWT (recruiter) | Cancel at period end |
+| POST | `/billing/webhooks/razorpay` | Razorpay signature | Subscription lifecycle webhooks |
+
+**Limits (defaults):** FREE 1 open job / 5 invites; PRO 10 / 50; BUSINESS 100 / 500.  
+When unpaid or over limit, **all recruiter writes are blocked** (jobs, invites, decisions) until upgrade.
 
 ### Interview (`/api/v1/interview`, `/api/v1/interviews`)
 
@@ -1714,6 +1730,7 @@ Per-file descriptions for application code are in the sections above. The tree i
 | `/recruiter/jobs/new`, `/recruiter/jobs/:id` | Recruiter | Job editor |
 | `/recruiter/jobs/:id/applicants` | Recruiter | Applicant list |
 | `/recruiter/applications/:id` | Recruiter | Application packet |
+| `/recruiter/billing` | Recruiter | Razorpay plans, usage, upgrade |
 
 ---
 

@@ -7,6 +7,7 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from "@/component
 import { GlowingCard } from "@/components/aceternity/glowing-card";
 import { ButtonLoading } from "@/shared/components/loading";
 import * as applicationApi from "@/features/applications/services/application-api";
+import { useBilling } from "@/features/billing/context/billing-context";
 
 type RecruiterApplicationActionsProps = {
   application: ApplicationResponse;
@@ -21,6 +22,7 @@ export function RecruiterApplicationActions({
   onApplicationUpdated,
   onOpenInterviewReview,
 }: RecruiterApplicationActionsProps) {
+  const { writable } = useBilling();
   const [busyAction, setBusyAction] = useState<string | null>(null);
 
   async function runAction(action: string, task: () => Promise<ApplicationResponse>, successMessage: string) {
@@ -66,14 +68,18 @@ export function RecruiterApplicationActions({
     <GlowingCard className="h-full">
       <CardHeader>
         <CardTitle>Recruiter actions</CardTitle>
-        <CardDescription>Move this candidate through your hiring workflow.</CardDescription>
+        <CardDescription>
+          {writable
+            ? "Move this candidate through your hiring workflow."
+            : "Workspace is read-only due to billing. Upgrade to invite or update decisions."}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Interview decision</p>
           <Button
             className="w-full justify-start bg-indigo-600 hover:bg-indigo-500"
-            disabled={!canInvite || busyAction !== null}
+            disabled={!writable || !canInvite || busyAction !== null}
             onClick={() =>
               void runAction("invite", () => applicationApi.inviteToInterview(application.id), "Candidate invited to interview.")
             }
@@ -87,7 +93,7 @@ export function RecruiterApplicationActions({
           <Button
             variant="outline"
             className="w-full justify-start border-emerald-500/20 bg-emerald-500/5 text-emerald-100 hover:bg-emerald-500/10"
-            disabled={!canSelect || busyAction !== null}
+            disabled={!writable || !canSelect || busyAction !== null}
             onClick={() =>
               void runAction(
                 "select",
@@ -114,7 +120,7 @@ export function RecruiterApplicationActions({
           <Button
             variant="outline"
             className="w-full justify-start border-white/10 bg-white/5"
-            disabled={!canMarkReviewed || busyAction !== null}
+            disabled={!writable || !canMarkReviewed || busyAction !== null}
             onClick={() =>
               void runAction(
                 "mark_reviewed",
@@ -132,7 +138,7 @@ export function RecruiterApplicationActions({
           <Button
             variant="outline"
             className="w-full justify-start border-white/10 bg-white/5"
-            disabled={!canMarkPending || busyAction !== null}
+            disabled={!writable || !canMarkPending || busyAction !== null}
             onClick={() =>
               void runAction(
                 "mark_pending",
@@ -150,7 +156,7 @@ export function RecruiterApplicationActions({
           <Button
             variant="outline"
             className="w-full justify-start border-red-500/20 bg-red-500/5 text-red-200 hover:bg-red-500/10"
-            disabled={!canReject || busyAction !== null}
+            disabled={!writable || !canReject || busyAction !== null}
             onClick={() =>
               void runAction(
                 "reject",

@@ -1,5 +1,5 @@
 import type { UserRole } from "@ai-interviewer/api-types";
-import { Briefcase, FileText, LayoutDashboard, LogOut, UserCircle } from "lucide-react";
+import { Briefcase, CreditCard, FileText, LayoutDashboard, LogOut, UserCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { Link, NavLink } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const candidateNav: NavItem[] = [
 const recruiterNav: NavItem[] = [
   { label: "Dashboard", to: "/recruiter/dashboard", icon: LayoutDashboard },
   { label: "Jobs", to: "/recruiter/jobs", icon: Briefcase },
+  { label: "Billing", to: "/recruiter/billing", icon: CreditCard },
 ];
 
 type AppNavbarProps = {

@@ -17,7 +17,8 @@ export const ApplicationStatus = {
   INTERVIEW_PENDING: 'INTERVIEW_PENDING',
   INTERVIEW_IN_PROGRESS: 'INTERVIEW_IN_PROGRESS',
   INTERVIEW_COMPLETED: 'INTERVIEW_COMPLETED',
-  INTERVIEW_CANCELLED: 'INTERVIEW_CANCELLED'
+  INTERVIEW_CANCELLED: 'INTERVIEW_CANCELLED',
+  SELECTED: 'SELECTED'
 } as const
 
 export type ApplicationStatus = (typeof ApplicationStatus)[keyof typeof ApplicationStatus]

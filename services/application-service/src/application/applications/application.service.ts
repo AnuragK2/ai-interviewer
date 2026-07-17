@@ -12,6 +12,10 @@ import { canStartInterview, createApplicationInvitedEvent, createPlatformEvent, 
 import { getEventBus } from "@ai-interviewer/event-bus";
 import { recordTenantAudit } from "../audit/audit.service";
 import { prisma } from "../../infrastructure/db/prisma.client";
+import {
+  assertRecruiterWritable,
+  recordInterviewInviteUsage,
+} from "../../infrastructure/billing/billing-client";
 import { env } from "../../config/env";
 
 export class ApplicationError extends Error {
@@ -309,6 +313,8 @@ export async function inviteToInterview(
     throw new ApplicationError("This application has already been invited to interview.", 409);
   }
 
+  await assertRecruiterWritable(ctx.companyId, undefined, "invite");
+
   const interviewResponse = await fetchJson<CreateInterviewFromApplicationResponse>(
     `${env.interviewServiceUrl}/api/v1/interviews/from-application`,
     {
@@ -334,6 +340,8 @@ export async function inviteToInterview(
       invitedAt: new Date(),
     },
   });
+
+  await recordInterviewInviteUsage(ctx.companyId);
 
   const bus = await getEventBus({ servers: env.natsUrl, name: env.serviceName });
   await bus.publish(
@@ -387,6 +395,8 @@ export async function updateRecruiterApplicationDecision(
   if (!app || app.companyId !== ctx.companyId) {
     throw new ApplicationError("Application not found.", 404);
   }
+
+  await assertRecruiterWritable(ctx.companyId, undefined, "write");
 
   let nextStatus = app.status;
 
